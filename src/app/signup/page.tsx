@@ -156,6 +156,7 @@ export default function SignupPage() {
                   <SelectItem value="chemical">Chemical Engineer</SelectItem>
                   <SelectItem value="industrial">Industrial Engineer</SelectItem>
                   <SelectItem value="software">Software Engineer</SelectItem>
+                  <SelectItem value="quantity_surveyor">Quantity Surveyor</SelectItem>
                 </SelectContent>
               </Select>
             </div>

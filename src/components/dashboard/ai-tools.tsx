@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Bot, CircuitBoard, Loader2, Code } from "lucide-react";
+import { Bot, CircuitBoard, Loader2, Code, Building } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { detectAnomalies, type DetectAnomaliesOutput } from "@/ai/flows/detect-anomalies";
 import { generateMaintenanceRecommendations, type MaintenanceRecommendationsOutput } from "@/ai/flows/generate-maintenance-recommendations";
 import { refactorCode, type RefactorCodeOutput } from "@/ai/flows/refactor-code";
+import { estimateConstructionCost, type EstimateConstructionCostOutput } from "@/ai/flows/estimate-construction-cost";
+import { Badge } from "../ui/badge";
 
 const anomalySchema = z.object({
   sensorData: z.string().min(10, "Please enter more detailed sensor data."),
@@ -33,14 +35,24 @@ const refactorSchema = z.object({
 });
 type RefactorFormValues = z.infer<typeof refactorSchema>;
 
+const costEstimatorSchema = z.object({
+    projectDescription: z.string().min(20, "Please provide a more detailed project description."),
+    location: z.string().min(2, "Please enter a valid location."),
+    squareFootage: z.coerce.number().min(1, "Square footage must be greater than zero."),
+});
+type CostEstimatorFormValues = z.infer<typeof costEstimatorSchema>;
+
 
 export default function AiTools() {
   const [anomalyResult, setAnomalyResult] = useState<DetectAnomaliesOutput | null>(null);
   const [recommendationResult, setRecommendationResult] = useState<MaintenanceRecommendationsOutput | null>(null);
   const [refactorResult, setRefactorResult] = useState<RefactorCodeOutput | null>(null);
+  const [costResult, setCostResult] = useState<EstimateConstructionCostOutput | null>(null);
+
   const [isAnomalyLoading, setIsAnomalyLoading] = useState(false);
   const [isRecommendationLoading, setIsRecommendationLoading] = useState(false);
   const [isRefactoring, setIsRefactoring] = useState(false);
+  const [isEstimating, setIsEstimating] = useState(false);
   const { toast } = useToast();
 
   const anomalyForm = useForm<AnomalyFormValues>({
@@ -72,6 +84,15 @@ export default function AiTools() {
   return result;
 }`,
     },
+  });
+
+  const costEstimatorForm = useForm<CostEstimatorFormValues>({
+    resolver: zodResolver(costEstimatorSchema),
+    defaultValues: {
+        projectDescription: "A 3-story office building with a concrete frame, glass curtain wall, and standard interior finishes.",
+        location: "New York, NY",
+        squareFootage: 50000,
+    }
   });
 
 
@@ -129,8 +150,116 @@ export default function AiTools() {
     }
   };
 
+  const onCostEstimatorSubmit: SubmitHandler<CostEstimatorFormValues> = async (data) => {
+    setIsEstimating(true);
+    setCostResult(null);
+    try {
+        const result = await estimateConstructionCost(data);
+        setCostResult(result);
+    } catch(error) {
+        console.error("Cost estimation failed:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to estimate cost. Please try again.",
+        });
+    } finally {
+        setIsEstimating(false);
+    }
+  };
+
   return (
     <div className="grid gap-8">
+       <Card>
+            <CardHeader>
+            <CardTitle>Construction Cost Estimator</CardTitle>
+            <CardDescription>Enter project details to get an AI-powered cost estimation.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-8 lg:grid-cols-2">
+                <div>
+                    <Form {...costEstimatorForm}>
+                        <form onSubmit={costEstimatorForm.handleSubmit(onCostEstimatorSubmit)} className="space-y-4">
+                        <FormField
+                            control={costEstimatorForm.control}
+                            name="projectDescription"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Project Description</FormLabel>
+                                <FormControl>
+                                <Textarea placeholder="e.g., A 10-story residential building..." {...field} rows={5} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={costEstimatorForm.control}
+                                name="location"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Location</FormLabel>
+                                    <FormControl>
+                                    <Input placeholder="e.g., San Francisco, CA" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={costEstimatorForm.control}
+                                name="squareFootage"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Square Footage</FormLabel>
+                                    <FormControl>
+                                    <Input type="number" placeholder="e.g., 50000" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        </div>
+                        <Button variant="accent" type="submit" disabled={isEstimating}>
+                            {isEstimating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Building className="mr-2 h-4 w-4" />}
+                            Estimate Cost
+                        </Button>
+                        </form>
+                    </Form>
+                </div>
+                 <div>
+                    <h4 className="mb-4 font-semibold text-lg">Estimation Result</h4>
+                    {isEstimating ? (
+                         <div className="flex items-center justify-center h-full border-2 border-dashed rounded-md">
+                            <div className="text-center">
+                                <Loader2 className="h-10 w-10 animate-spin text-accent" />
+                                <p className="mt-2 text-muted-foreground">Calculating your estimate...</p>
+                            </div>
+                        </div>
+                    ) : costResult ? (
+                        <div className="rounded-lg border bg-muted/50 p-4 space-y-4">
+                            <div>
+                                <p className="text-sm text-muted-foreground">Total Estimated Cost</p>
+                                <p className="text-3xl font-bold text-accent">${costResult.estimatedCost.toLocaleString()}</p>
+                                <Badge>Confidence: {(costResult.confidence * 100).toFixed(0)}%</Badge>
+                            </div>
+                            <div>
+                                <h5 className="font-semibold">Cost Breakdown</h5>
+                                <div className="text-sm text-muted-foreground prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: costResult.costBreakdown.replace(/\n/g, '<br />') }} />
+                            </div>
+                            <div>
+                                <h5 className="font-semibold">Assumptions</h5>
+                                <p className="text-sm text-muted-foreground">{costResult.assumptions}</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex items-center justify-center h-full border-2 border-dashed rounded-md">
+                            <p className="text-muted-foreground">Waiting for project details...</p>
+                        </div>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
       <div className="grid gap-4 md:gap-8 lg:grid-cols-2">
         <Card>
             <CardHeader>

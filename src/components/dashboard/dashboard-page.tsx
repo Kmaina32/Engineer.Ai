@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -11,6 +9,7 @@ import { SoftwareEngineerDashboard } from '@/components/dashboards/software-engi
 import { MechanicalEngineerDashboard } from '@/components/dashboards/mechanical-engineer-dashboard';
 import { ElectricalEngineerDashboard } from '@/components/dashboards/electrical-engineer-dashboard';
 import { DefaultDashboard } from '@/components/dashboards/default-dashboard';
+import { QuantitySurveyorDashboard } from '@/components/dashboards/quantity-surveyor-dashboard';
 import Sidebar from "@/components/dashboard/sidebar";
 import Header from "@/components/dashboard/header";
 import { Loader2 } from 'lucide-react';
@@ -59,6 +58,8 @@ export default function DashboardPage() {
         return <MechanicalEngineerDashboard />;
       case 'electrical':
         return <ElectricalEngineerDashboard />;
+      case 'quantity_surveyor':
+        return <QuantitySurveyorDashboard />;
       case 'civil':
       case 'industrial':
       case 'chemical':
