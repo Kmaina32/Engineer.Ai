@@ -1,10 +1,10 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Cookie } from 'lucide-react';
-import Link from 'next/link';
 
 export default function CookieBanner() {
   const [showBanner, setShowBanner] = useState(false);
@@ -16,8 +16,8 @@ export default function CookieBanner() {
     }
   }, []);
 
-  const handleAccept = () => {
-    localStorage.setItem('cookie_consent', 'true');
+  const handleConsent = (consent: 'true' | 'false') => {
+    localStorage.setItem('cookie_consent', consent);
     setShowBanner(false);
   };
 
@@ -35,8 +35,11 @@ export default function CookieBanner() {
               We use cookies to enhance your experience. By continuing to visit this site you agree to our use of cookies.
             </p>
           </div>
-          <div className="flex-shrink-0">
-            <Button onClick={handleAccept} variant="accent" size="sm">
+          <div className="flex-shrink-0 flex gap-2">
+            <Button onClick={() => handleConsent('false')} variant="outline" size="sm">
+              Deny
+            </Button>
+            <Button onClick={() => handleConsent('true')} variant="accent" size="sm">
               Accept
             </Button>
           </div>
