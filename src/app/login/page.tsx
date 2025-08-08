@@ -46,6 +46,7 @@ export default function LoginPage() {
           width="1920"
           height="1080"
           className="h-full w-full object-cover dark:brightness-[0.3]"
+          data-ai-hint="engineering industrial"
         />
       </div>
       <div className="flex items-center justify-center py-12">

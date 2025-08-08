@@ -4,8 +4,9 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
-import { Wrench, Zap, Thermometer, Wind } from "lucide-react";
-import AiTools from "../dashboard/ai-tools";
+import { Wrench, Zap, Thermometer, Wind, Bot } from "lucide-react";
+import Link from "next/link";
+import { Button } from "../ui/button";
 
 const performanceData = [
   { hour: '00:00', pressure: 140, flowRate: 2200, efficiency: 85 },
@@ -100,7 +101,20 @@ export function MechanicalEngineerDashboard() {
                     </ChartContainer>
                 </CardContent>
             </Card>
-            <AiTools />
+            <Card className="flex flex-col items-center justify-center">
+                <CardHeader className="text-center">
+                    <div className="mx-auto bg-muted rounded-full p-3 w-fit">
+                      <Bot className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <CardTitle className="mt-4">Need AI Assistance?</CardTitle>
+                    <CardDescription>Use our dedicated AI tools for anomaly detection and maintenance recommendations.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Link href="/ai-tools">
+                        <Button variant="accent">Go to AI Tools</Button>
+                    </Link>
+                </CardContent>
+            </Card>
         </div>
     </div>
   );

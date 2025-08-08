@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 
 import { SoftwareEngineerDashboard } from '@/components/dashboards/software-engineer-dashboard';
@@ -14,47 +14,47 @@ import Sidebar from "@/components/dashboard/sidebar";
 import Header from "@/components/dashboard/header";
 import { LogoIcon } from '../icons';
 import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
   const [engineerType, setEngineerType] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [isConnecting, setIsConnecting] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser(user);
-        // Use a dummy document to check for connection status.
-        // onSnapshot provides real-time connection state.
-        const unsubscribeFirestore = onSnapshot(doc(db, "users", user.uid), 
+        const userDocRef = doc(db, 'users', user.uid);
+
+        const unsubscribeFirestore = onSnapshot(userDocRef, 
           (doc) => {
-            setIsConnecting(false); // Connection is active
+            setIsConnecting(false); // Connected!
             if (doc.exists()) {
               setEngineerType(doc.data().engineerType);
             } else {
-              setEngineerType('default');
+              setEngineerType('default'); // Fallback for existing users with no type
             }
             setLoading(false);
           },
           (error) => {
             console.error("Firestore connection error:", error);
-            // Keep trying to connect on error
-            setIsConnecting(true); 
-            setLoading(true);
+            setIsConnecting(true); // Keep showing connecting state on error
+            setLoading(false); // Stop general loading
           }
         );
-        
         return () => unsubscribeFirestore();
       } else {
-        // If there's no user, we are not connecting or loading data.
+        router.push('/login');
         setIsConnecting(false);
         setLoading(false);
       }
     });
 
     return () => unsubscribeAuth();
-  }, []);
+  }, [router]);
 
   const renderDashboard = () => {
     switch (engineerType) {
