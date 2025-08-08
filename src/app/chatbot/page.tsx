@@ -1,9 +1,17 @@
 import Chatbot from "@/components/chatbot/chatbot";
+import Header from "@/components/dashboard/header";
+import Sidebar from "@/components/dashboard/sidebar";
 
 export default function ChatbotPage() {
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-background">
-            <Chatbot />
+        <div className="flex min-h-screen w-full flex-col bg-muted/40">
+            <Sidebar />
+            <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
+                <Header />
+                <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+                    <Chatbot />
+                </main>
+            </div>
         </div>
     )
 }

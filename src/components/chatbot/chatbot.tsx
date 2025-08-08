@@ -84,7 +84,7 @@ export default function Chatbot() {
   };
 
   return (
-    <Card className="w-full max-w-2xl h-[70vh] flex flex-col">
+    <Card className="w-full max-w-4xl h-[80vh] flex flex-col">
       <CardHeader>
         <CardTitle>AI Assistant</CardTitle>
         <CardDescription>Ask me anything. I'm here to help you, {engineerType ? `the ${engineerType} engineer` : ''}!</CardDescription>
