@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -75,14 +76,26 @@ export default function LoginPage() {
               <div className="flex items-center">
                 <Label htmlFor="password">Password</Label>
               </div>
-              <Input 
-                id="password" 
-                type="password" 
-                required 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-              />
+               <div className="relative">
+                <Input 
+                  id="password" 
+                  type={showPassword ? "text" : "password"}
+                  required 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                />
+                 <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  disabled={loading}
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </Button>
+              </div>
             </div>
             <Button type="submit" className="w-full" disabled={loading} variant="accent">
               {loading ? 'Logging in...' : 'Login'}
