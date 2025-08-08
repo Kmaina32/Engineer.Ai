@@ -30,6 +30,7 @@ export default function DashboardPage() {
             if (doc.exists()) {
               setEngineerType(doc.data().engineerType);
             } else {
+              // This might happen if the user document is not created yet
               setEngineerType('default');
             }
             setLoading(false);
@@ -42,13 +43,14 @@ export default function DashboardPage() {
         );
         return () => unsubscribeFirestore();
     } else {
+        // This case should be handled by the root page loader, but as a fallback:
         setLoading(false);
     }
   }, []);
 
   const renderDashboard = () => {
     if (connectionError) {
-        return <DefaultDashboard /> // Show default dashboard with error state
+        return <DefaultDashboard /> // Show default dashboard which will handle its own error state
     }
     switch (engineerType) {
       case 'software':

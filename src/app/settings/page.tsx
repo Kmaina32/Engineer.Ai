@@ -110,6 +110,8 @@ export default function SettingsPage() {
 
         return () => unsubscribeFirestore();
       } else {
+        // User is logged out
+        setUser(null);
         setIsConnecting(false);
         setLoading(false);
       }
