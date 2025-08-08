@@ -8,6 +8,7 @@ import { auth, db } from '@/lib/firebase';
 
 import { SoftwareEngineerDashboard } from '@/components/dashboards/software-engineer-dashboard';
 import { MechanicalEngineerDashboard } from '@/components/dashboards/mechanical-engineer-dashboard';
+import { ElectricalEngineerDashboard } from '@/components/dashboards/electrical-engineer-dashboard';
 import { DefaultDashboard } from '@/components/dashboards/default-dashboard';
 import Sidebar from "@/components/dashboard/sidebar";
 import Header from "@/components/dashboard/header";
@@ -61,9 +62,10 @@ export default function DashboardPage() {
         return <SoftwareEngineerDashboard />;
       case 'mechanical':
         return <MechanicalEngineerDashboard />;
+      case 'electrical':
+        return <ElectricalEngineerDashboard />;
       case 'civil':
       case 'industrial':
-      case 'electrical':
       case 'chemical':
       default:
         return <DefaultDashboard />;

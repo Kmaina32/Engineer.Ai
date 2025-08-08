@@ -1,7 +1,37 @@
 
+"use client"
+
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
+import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import { Wrench, Zap, Thermometer, Wind } from "lucide-react";
 import AiTools from "../dashboard/ai-tools";
+
+const performanceData = [
+  { hour: '00:00', pressure: 140, flowRate: 2200, efficiency: 85 },
+  { hour: '02:00', pressure: 142, flowRate: 2300, efficiency: 84 },
+  { hour: '04:00', pressure: 145, flowRate: 2250, efficiency: 83 },
+  { hour: '06:00', pressure: 140, flowRate: 2100, efficiency: 86 },
+  { hour: '08:00', pressure: 138, flowRate: 2050, efficiency: 87 },
+  { hour: '10:00', pressure: 148, flowRate: 2400, efficiency: 82 },
+  { hour: '12:00', pressure: 150, flowRate: 2500, efficiency: 80 },
+  { hour: '14:00', pressure: 147, flowRate: 2450, efficiency: 81 },
+];
+
+const chartConfig = {
+  pressure: {
+    label: 'Pressure (psi)',
+    color: 'hsl(var(--chart-1))',
+  },
+  flowRate: {
+    label: 'Flow Rate (gpm)',
+    color: 'hsl(var(--chart-2))',
+  },
+  efficiency: {
+    label: 'Efficiency (%)',
+    color: 'hsl(var(--chart-3))',
+  },
+} satisfies ChartConfig;
 
 export function MechanicalEngineerDashboard() {
   return (
@@ -49,7 +79,27 @@ export function MechanicalEngineerDashboard() {
                 </CardContent>
             </Card>
         </div>
-        <div className="mt-8">
+        <div className="grid gap-4 mt-8 lg:grid-cols-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Pump Performance Analysis</CardTitle>
+                    <CardDescription>Real-time performance metrics for Centrifugal Pump P-101.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
+                        <LineChart data={performanceData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="hour" />
+                            <YAxis />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <ChartLegend />
+                            <Line type="monotone" dataKey="pressure" stroke="var(--color-pressure)" strokeWidth={2} dot={false}/>
+                            <Line type="monotone" dataKey="flowRate" stroke="var(--color-flowRate)" strokeWidth={2} dot={false} />
+                            <Line type="monotone" dataKey="efficiency" stroke="var(--color-efficiency)" strokeWidth={2} dot={false} />
+                        </LineChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
             <AiTools />
         </div>
     </div>
