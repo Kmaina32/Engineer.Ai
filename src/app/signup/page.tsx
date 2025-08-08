@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -150,6 +151,7 @@ export default function SignupPage() {
                   <SelectValue placeholder="Select your field" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="architect">Architect</SelectItem>
                   <SelectItem value="mechanical">Mechanical Engineer</SelectItem>
                   <SelectItem value="electrical">Electrical Engineer</SelectItem>
                   <SelectItem value="civil">Civil Engineer</SelectItem>

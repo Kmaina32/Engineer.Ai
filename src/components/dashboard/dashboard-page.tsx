@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -10,6 +11,7 @@ import { MechanicalEngineerDashboard } from '@/components/dashboards/mechanical-
 import { ElectricalEngineerDashboard } from '@/components/dashboards/electrical-engineer-dashboard';
 import { DefaultDashboard } from '@/components/dashboards/default-dashboard';
 import { QuantitySurveyorDashboard } from '@/components/dashboards/quantity-surveyor-dashboard';
+import { ArchitectDashboard } from '@/components/dashboards/architect-dashboard';
 import Sidebar from "@/components/dashboard/sidebar";
 import Header from "@/components/dashboard/header";
 import { Loader2 } from 'lucide-react';
@@ -52,6 +54,8 @@ export default function DashboardPage() {
         return <DefaultDashboard /> // Show default dashboard which will handle its own error state
     }
     switch (engineerType) {
+      case 'architect':
+        return <ArchitectDashboard />;
       case 'software':
         return <SoftwareEngineerDashboard />;
       case 'mechanical':

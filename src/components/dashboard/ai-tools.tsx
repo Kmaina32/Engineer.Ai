@@ -1,10 +1,12 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Bot, CircuitBoard, Loader2, Code, Building } from "lucide-react";
+import { Bot, CircuitBoard, Loader2, Code, Building, DraftingCompass, Upload, FileImage } from "lucide-react";
+import Image from "next/image";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +18,7 @@ import { detectAnomalies, type DetectAnomaliesOutput } from "@/ai/flows/detect-a
 import { generateMaintenanceRecommendations, type MaintenanceRecommendationsOutput } from "@/ai/flows/generate-maintenance-recommendations";
 import { refactorCode, type RefactorCodeOutput } from "@/ai/flows/refactor-code";
 import { estimateConstructionCost, type EstimateConstructionCostOutput } from "@/ai/flows/estimate-construction-cost";
+import { analyzeDrawing, type AnalyzeDrawingOutput } from "@/ai/flows/analyze-drawing";
 import { Badge } from "../ui/badge";
 
 const anomalySchema = z.object({
@@ -42,18 +45,29 @@ const costEstimatorSchema = z.object({
 });
 type CostEstimatorFormValues = z.infer<typeof costEstimatorSchema>;
 
+const drawingAnalysisSchema = z.object({
+    analysisQuery: z.string().min(10, "Please provide a specific question for the analysis."),
+    drawingFile: z.any().refine(files => files?.length === 1, "Please upload one image file."),
+});
+type DrawingAnalysisFormValues = z.infer<typeof drawingAnalysisSchema>;
+
 
 export default function AiTools() {
   const [anomalyResult, setAnomalyResult] = useState<DetectAnomaliesOutput | null>(null);
   const [recommendationResult, setRecommendationResult] = useState<MaintenanceRecommendationsOutput | null>(null);
   const [refactorResult, setRefactorResult] = useState<RefactorCodeOutput | null>(null);
   const [costResult, setCostResult] = useState<EstimateConstructionCostOutput | null>(null);
+  const [drawingResult, setDrawingResult] = useState<AnalyzeDrawingOutput | null>(null);
+  const [drawingPreview, setDrawingPreview] = useState<string | null>(null);
 
   const [isAnomalyLoading, setIsAnomalyLoading] = useState(false);
   const [isRecommendationLoading, setIsRecommendationLoading] = useState(false);
   const [isRefactoring, setIsRefactoring] = useState(false);
   const [isEstimating, setIsEstimating] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { toast } = useToast();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const anomalyForm = useForm<AnomalyFormValues>({
     resolver: zodResolver(anomalySchema),
@@ -92,6 +106,13 @@ export default function AiTools() {
         projectDescription: "A 3-story office building with a concrete frame, glass curtain wall, and standard interior finishes.",
         location: "New York, NY",
         squareFootage: 50000,
+    }
+  });
+
+  const drawingAnalysisForm = useForm<DrawingAnalysisFormValues>({
+    resolver: zodResolver(drawingAnalysisSchema),
+    defaultValues: {
+        analysisQuery: "Check this floor plan for accessibility compliance (e.g., door widths, ramp slopes) and suggest improvements.",
     }
   });
 
@@ -168,9 +189,164 @@ export default function AiTools() {
     }
   };
 
+  const onDrawingAnalysisSubmit: SubmitHandler<DrawingAnalysisFormValues> = async (data) => {
+    setIsAnalyzing(true);
+    setDrawingResult(null);
+
+    const file = data.drawingFile[0];
+    if (!file) {
+        toast({ variant: "destructive", title: "Error", description: "No file selected."});
+        setIsAnalyzing(false);
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async () => {
+        const drawingDataUri = reader.result as string;
+        try {
+            const result = await analyzeDrawing({
+                drawingDataUri,
+                analysisQuery: data.analysisQuery,
+            });
+            setDrawingResult(result);
+        } catch(error) {
+            console.error("Drawing analysis failed:", error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to analyze drawing. Please try again.",
+            });
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
+     reader.onerror = (error) => {
+        console.error("File reading error:", error);
+        toast({ variant: 'destructive', title: 'File Error', description: 'Could not read the selected file.' });
+        setIsAnalyzing(false);
+    };
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setDrawingPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+
   return (
     <div className="grid gap-8">
-       <Card>
+        <Card>
+            <CardHeader>
+                <CardTitle>Architectural Drawing Analyzer</CardTitle>
+                <CardDescription>Upload a drawing to get an AI-powered analysis for compliance, suggestions, and potential issues.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-8 lg:grid-cols-2">
+                 <div>
+                    <Form {...drawingAnalysisForm}>
+                        <form onSubmit={drawingAnalysisForm.handleSubmit(onDrawingAnalysisSubmit)} className="space-y-4">
+                            <FormField
+                                control={drawingAnalysisForm.control}
+                                name="drawingFile"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Drawing File</FormLabel>
+                                        <FormControl>
+                                             <div
+                                                className="relative flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                >
+                                                {drawingPreview ? (
+                                                    <Image src={drawingPreview} alt="Drawing preview" layout="fill" objectFit="contain" className="rounded-lg" />
+                                                ) : (
+                                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                                        <Upload className="w-8 h-8 mb-4 text-muted-foreground" />
+                                                        <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                                                        <p className="text-xs text-muted-foreground">PNG, JPG, or other image formats</p>
+                                                    </div>
+                                                )}
+                                                 <Input
+                                                    type="file"
+                                                    ref={fileInputRef}
+                                                    className="hidden"
+                                                    accept="image/*"
+                                                    onChange={(e) => {
+                                                        field.onChange(e.target.files);
+                                                        handleFileChange(e);
+                                                    }}
+                                                />
+                                            </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={drawingAnalysisForm.control}
+                                name="analysisQuery"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Analysis Prompt</FormLabel>
+                                    <FormControl>
+                                    <Textarea placeholder="e.g., Check for ADA compliance and suggest improvements..." {...field} rows={3} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <Button variant="accent" type="submit" disabled={isAnalyzing}>
+                                {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <DraftingCompass className="mr-2 h-4 w-4" />}
+                                Analyze Drawing
+                            </Button>
+                        </form>
+                    </Form>
+                 </div>
+                 <div>
+                     <h4 className="mb-4 font-semibold text-lg">Analysis Result</h4>
+                     {isAnalyzing ? (
+                         <div className="flex items-center justify-center h-full border-2 border-dashed rounded-md">
+                            <div className="text-center">
+                                <Loader2 className="h-10 w-10 animate-spin text-accent" />
+                                <p className="mt-2 text-muted-foreground">Analyzing your drawing...</p>
+                            </div>
+                        </div>
+                     ) : drawingResult ? (
+                        <div className="rounded-lg border bg-muted/50 p-4 space-y-4 max-h-[500px] overflow-y-auto">
+                            <div>
+                                <h5 className="font-semibold">Summary</h5>
+                                <p className="text-sm text-muted-foreground">{drawingResult.summary}</p>
+                            </div>
+                             <div>
+                                <h5 className="font-semibold">Potential Issues</h5>
+                                <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                                    {drawingResult.potentialIssues.map((issue, i) => <li key={i}>{issue}</li>)}
+                                </ul>
+                            </div>
+                             <div>
+                                <h5 className="font-semibold">Suggestions</h5>
+                                <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                                    {drawingResult.suggestions.map((suggestion, i) => <li key={i}>{suggestion}</li>)}
+                                </ul>
+                            </div>
+                        </div>
+                     ) : (
+                        <div className="flex items-center justify-center h-full border-2 border-dashed rounded-md">
+                             <div className="text-center">
+                                <FileImage className="w-10 h-10 mx-auto text-muted-foreground" />
+                                <p className="mt-2 text-muted-foreground">Waiting for drawing submission...</p>
+                            </div>
+                        </div>
+                     )}
+                 </div>
+            </CardContent>
+        </Card>
+        <Card>
             <CardHeader>
             <CardTitle>Construction Cost Estimator</CardTitle>
             <CardDescription>Enter project details to get an AI-powered cost estimation.</CardDescription>
