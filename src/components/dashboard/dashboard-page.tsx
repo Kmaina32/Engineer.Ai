@@ -3,9 +3,9 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { onAuthStateChanged, type User } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
+import type { User } from 'firebase/auth';
 
 import { SoftwareEngineerDashboard } from '@/components/dashboards/software-engineer-dashboard';
 import { MechanicalEngineerDashboard } from '@/components/dashboards/mechanical-engineer-dashboard';
@@ -13,28 +13,20 @@ import { ElectricalEngineerDashboard } from '@/components/dashboards/electrical-
 import { DefaultDashboard } from '@/components/dashboards/default-dashboard';
 import Sidebar from "@/components/dashboard/sidebar";
 import Header from "@/components/dashboard/header";
-import { LogoIcon } from '../icons';
 import { Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
   const [engineerType, setEngineerType] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
-  const [isConnecting, setIsConnecting] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);
-  const router = useRouter();
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUser(user);
+    const user = auth.currentUser;
+    if (user) {
         const userDocRef = doc(db, 'users', user.uid);
-
         const unsubscribeFirestore = onSnapshot(userDocRef, 
           (doc) => {
             setConnectionError(null);
-            setIsConnecting(false); 
             if (doc.exists()) {
               setEngineerType(doc.data().engineerType);
             } else {
@@ -45,20 +37,14 @@ export default function DashboardPage() {
           (error) => {
             console.error("Firestore connection error:", error);
             setConnectionError("Could not connect to the database to retrieve your profile. Some features may be unavailable.");
-            setIsConnecting(false); 
             setLoading(false);
           }
         );
         return () => unsubscribeFirestore();
-      } else {
-        router.push('/login');
-        setIsConnecting(false);
+    } else {
         setLoading(false);
-      }
-    });
-
-    return () => unsubscribeAuth();
-  }, [router]);
+    }
+  }, []);
 
   const renderDashboard = () => {
     if (connectionError) {
@@ -81,18 +67,10 @@ export default function DashboardPage() {
   
   const LoadingState = () => (
     <div className="flex flex-col items-center justify-center py-20">
-      <LogoIcon className="h-10 w-10 animate-pulse text-accent" />
-      <p className="mt-2 text-muted-foreground">Loading Dashboard...</p>
+      <Loader2 className="h-10 w-10 animate-spin text-accent" />
+      <p className="mt-2 text-muted-foreground">Loading Your Dashboard...</p>
     </div>
   )
-
-  const ConnectingState = () => (
-     <div className="flex flex-col items-center justify-center py-20">
-        <Loader2 className="h-10 w-10 animate-spin text-accent" />
-        <p className="mt-4 text-muted-foreground">Connecting to database...</p>
-    </div>
-  )
-
 
   return (
      <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -100,7 +78,7 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
         <Header />
         <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-           {isConnecting ? <ConnectingState /> : loading ? <LoadingState /> : renderDashboard()}
+           {loading ? <LoadingState /> : renderDashboard()}
         </main>
       </div>
     </div>
