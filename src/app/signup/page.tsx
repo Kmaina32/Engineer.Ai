@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { LogoIcon } from '@/components/icons';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -34,8 +35,7 @@ export default function SignupPage() {
     setLoading(true);
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      // Here you would typically also save the engineerType to your database
-      // associated with the new user. For now, we'll store it in localStorage.
+      // In a real app, this would be saved to a database profile.
       localStorage.setItem('engineerType', engineerType);
       router.push('/');
     } catch (error: any) {
@@ -50,63 +50,77 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="w-full max-w-md space-y-8 rounded-lg border bg-card p-8 text-card-foreground shadow-lg">
-        <div className="flex flex-col items-center">
-          <LogoIcon className="mb-4 h-10 w-10 text-accent" />
-          <h1 className="text-2xl font-bold">Create an Account</h1>
-          <p className="text-muted-foreground">Join PredictAI to get started</p>
+    <div className="w-full lg:grid lg:min-h-[100vh] lg:grid-cols-2">
+       <div className="flex items-center justify-center py-12">
+        <div className="mx-auto grid w-[350px] gap-6">
+          <div className="grid gap-2 text-center">
+            <LogoIcon className="h-10 w-10 text-accent mx-auto mb-2" />
+            <h1 className="text-3xl font-bold">Create an Account</h1>
+            <p className="text-balance text-muted-foreground">
+              Enter your information to create an account
+            </p>
+          </div>
+          <form onSubmit={handleSignup} className="grid gap-4">
+             <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="m@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <Input 
+                id="password" 
+                type="password" 
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="engineerType">Engineering Discipline</Label>
+              <Select onValueChange={setEngineerType} value={engineerType} disabled={loading}>
+                <SelectTrigger id="engineerType">
+                  <SelectValue placeholder="Select your field" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mechanical">Mechanical Engineer</SelectItem>
+                  <SelectItem value="electrical">Electrical Engineer</SelectItem>
+                  <SelectItem value="civil">Civil Engineer</SelectItem>
+                  <SelectItem value="chemical">Chemical Engineer</SelectItem>
+                  <SelectItem value="industrial">Industrial Engineer</SelectItem>
+                  <SelectItem value="software">Software Engineer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="submit" className="w-full" variant="accent" disabled={loading}>
+              {loading ? 'Creating Account...' : 'Create Account'}
+            </Button>
+          </form>
+          <div className="mt-4 text-center text-sm">
+            Already have an account?{' '}
+            <Link href="/login" className="underline text-accent">
+              Login
+            </Link>
+          </div>
         </div>
-        <form onSubmit={handleSignup} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="engineer@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={loading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={loading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="engineerType">Engineering Discipline</Label>
-            <Select onValueChange={setEngineerType} value={engineerType} disabled={loading}>
-              <SelectTrigger id="engineerType">
-                <SelectValue placeholder="Select your field" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="mechanical">Mechanical Engineer</SelectItem>
-                <SelectItem value="electrical">Electrical Engineer</SelectItem>
-                <SelectItem value="civil">Civil Engineer</SelectItem>
-                <SelectItem value="chemical">Chemical Engineer</SelectItem>
-                <SelectItem value="industrial">Industrial Engineer</SelectItem>
-                <SelectItem value="software">Software Engineer</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <Button type="submit" className="w-full" disabled={loading} variant="accent">
-            {loading ? 'Creating Account...' : 'Sign Up'}
-          </Button>
-        </form>
-        <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{' '}
-          <Link href="/login" className="font-semibold text-accent hover:underline">
-            Log In
-          </Link>
-        </p>
+      </div>
+      <div className="hidden bg-muted lg:block">
+        <Image
+          src="https://placehold.co/1920x1080.png"
+          data-ai-hint="factory blueprint"
+          alt="Image"
+          width="1920"
+          height="1080"
+          className="h-full w-full object-cover dark:brightness-[0.3]"
+        />
       </div>
     </div>
   );

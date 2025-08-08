@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -10,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { LogoIcon } from '@/components/icons';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -36,47 +38,63 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="w-full max-w-md space-y-8 rounded-lg border bg-card p-8 text-card-foreground shadow-lg">
-        <div className="flex flex-col items-center">
-          <LogoIcon className="mb-4 h-10 w-10 text-accent" />
-          <h1 className="text-2xl font-bold">Welcome Back</h1>
-          <p className="text-muted-foreground">Sign in to continue to PredictAI</p>
+    <div className="w-full lg:grid lg:min-h-[100vh] lg:grid-cols-2 xl:min-h-[100vh]">
+      <div className="hidden bg-muted lg:block">
+        <Image
+          src="https://placehold.co/1920x1080.png"
+          data-ai-hint="industrial machinery"
+          alt="Image"
+          width="1920"
+          height="1080"
+          className="h-full w-full object-cover dark:brightness-[0.3]"
+        />
+      </div>
+      <div className="flex items-center justify-center py-12">
+        <div className="mx-auto grid w-[350px] gap-6">
+          <div className="grid gap-2 text-center">
+            <LogoIcon className="h-10 w-10 text-accent mx-auto mb-2" />
+            <h1 className="text-3xl font-bold">Welcome Back</h1>
+            <p className="text-balance text-muted-foreground">
+              Enter your credentials to access your account
+            </p>
+          </div>
+          <form onSubmit={handleLogin} className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="m@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+            <div className="grid gap-2">
+              <div className="flex items-center">
+                <Label htmlFor="password">Password</Label>
+              </div>
+              <Input 
+                id="password" 
+                type="password" 
+                required 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading} variant="accent">
+              {loading ? 'Logging in...' : 'Login'}
+            </Button>
+          </form>
+          <div className="mt-4 text-center text-sm">
+            Don&apos;t have an account?{' '}
+            <Link href="/signup" className="underline text-accent">
+              Sign up
+            </Link>
+          </div>
         </div>
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="engineer@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={loading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={loading}
-            />
-          </div>
-          <Button type="submit" className="w-full" disabled={loading} variant="accent">
-            {loading ? 'Logging in...' : 'Log In'}
-          </Button>
-        </form>
-        <p className="text-center text-sm text-muted-foreground">
-          Don't have an account?{' '}
-          <Link href="/signup" className="font-semibold text-accent hover:underline">
-            Sign up
-          </Link>
-        </p>
       </div>
     </div>
   );
