@@ -1,5 +1,3 @@
-# Firebase Studio
+# PredictAI
 
-This is a NextJS starter in Firebase Studio.
-
-To get started, take a look at src/app/page.tsx.
+This is a Next.js app for a predictive maintenance AI SaaS platform. It features real-time sensor data visualization, AI-powered anomaly detection, and maintenance recommendations.
