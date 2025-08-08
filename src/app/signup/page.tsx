@@ -114,8 +114,7 @@ export default function SignupPage() {
       </div>
       <div className="hidden bg-muted lg:block">
         <Image
-          src="https://placehold.co/1920x1080.png"
-          data-ai-hint="factory blueprint"
+          src="https://www.discoverengineering.org/wp-content/uploads/2023/12/mj_11226_4.jpg"
           alt="Image"
           width="1920"
           height="1080"

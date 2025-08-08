@@ -41,8 +41,7 @@ export default function LoginPage() {
     <div className="w-full lg:grid lg:min-h-[100vh] lg:grid-cols-2 xl:min-h-[100vh]">
       <div className="hidden bg-muted lg:block">
         <Image
-          src="https://placehold.co/1920x1080.png"
-          data-ai-hint="industrial machinery"
+          src="https://www.discoverengineering.org/wp-content/uploads/2023/12/mj_11226_4.jpg"
           alt="Image"
           width="1920"
           height="1080"
