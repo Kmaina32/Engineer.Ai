@@ -1,11 +1,12 @@
 
+
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Bot, User, Loader2, Send } from 'lucide-react';
+import { Bot, User, Loader2, Send, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -15,8 +16,20 @@ import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { generalChat } from '@/ai/flows/general-chat';
 import { cn } from '@/lib/utils';
 import { onAuthStateChanged, type User as AuthUser } from 'firebase/auth';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  onSnapshot,
+  query,
+  orderBy,
+  doc,
+  getDoc,
+  writeBatch,
+  getDocs,
+} from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 const chatSchema = z.object({
   message: z.string().min(1, "Message cannot be empty"),
@@ -27,40 +40,51 @@ type ChatFormValues = z.infer<typeof chatSchema>;
 interface Message {
   text: string;
   isUser: boolean;
+  timestamp?: any;
 }
 
 export default function Chatbot() {
-  const [messages, setMessages] = useState<Message[]>([
-    { text: "Hello! I'm your AI assistant. How can I help you today?", isUser: false },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isConnecting, setIsConnecting] = useState(true);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [engineerType, setEngineerType] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Check for user and Firestore connection status
-    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const userDocRef = doc(db, "users", user.uid);
-        
-        // Use onSnapshot for real-time connection status
-        const unsubscribeFirestore = onSnapshot(userDocRef, 
-          (doc) => {
-            setIsConnecting(false); // Connected
-            if (doc.exists()) {
-              setEngineerType(doc.data().engineerType);
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        const userDocRef = doc(db, "users", currentUser.uid);
+        const chatHistoryCollectionRef = collection(db, "users", currentUser.uid, "chatHistory");
+        const q = query(chatHistoryCollectionRef, orderBy("timestamp"));
+
+        const unsubscribeFirestore = onSnapshot(q,
+          (querySnapshot) => {
+            setIsConnecting(false);
+            const history = querySnapshot.docs.map(doc => doc.data() as Message);
+            if (history.length === 0) {
+              setMessages([{ text: "Hello! I'm your AI assistant. How can I help you today?", isUser: false }]);
+            } else {
+              setMessages(history);
             }
           },
           (error) => {
-            console.error("Firestore snapshot error:", error);
-            setIsConnecting(true); // Still treat as connecting on error
+            console.error("Firestore chat history error:", error);
+            setIsConnecting(true);
           }
         );
+        
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+            setEngineerType(userDocSnap.data().engineerType);
+        }
 
         return () => unsubscribeFirestore();
       } else {
         setIsConnecting(false);
+        setMessages([{ text: "Please log in to use the chatbot.", isUser: false }]);
       }
     });
 
@@ -69,9 +93,7 @@ export default function Chatbot() {
 
   const form = useForm<ChatFormValues>({
     resolver: zodResolver(chatSchema),
-    defaultValues: {
-      message: "",
-    },
+    defaultValues: { message: "" },
   });
 
   const scrollToBottom = () => {
@@ -88,24 +110,49 @@ export default function Chatbot() {
   }, [messages]);
 
   const onSubmit: SubmitHandler<ChatFormValues> = async (data) => {
-    const userMessage: Message = { text: data.message, isUser: true };
-    setMessages(prev => [...prev, userMessage]);
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to chat.' });
+        return;
+    }
+    const userMessage: Message = { text: data.message, isUser: true, timestamp: serverTimestamp() };
+    setMessages(prev => [...prev, {text: data.message, isUser: true}]);
     setIsLoading(true);
     form.reset();
 
     try {
+      const chatHistoryCollectionRef = collection(db, "users", user.uid, "chatHistory");
+      await addDoc(chatHistoryCollectionRef, userMessage);
+
       const result = await generalChat({
         userQuery: data.message,
         userDiscipline: engineerType || 'General',
       });
-      const botMessage: Message = { text: result.response, isUser: false };
-      setMessages(prev => [...prev, botMessage]);
+      const botMessage: Message = { text: result.response, isUser: false, timestamp: serverTimestamp() };
+      await addDoc(chatHistoryCollectionRef, botMessage);
+      // The onSnapshot listener will update the state, no need to call setMessages here.
     } catch (error) {
       console.error("Chatbot error:", error);
       const errorMessage: Message = { text: "Sorry, I encountered an error. Please try again.", isUser: false };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  const handleClearHistory = async () => {
+    if (!user) return;
+    try {
+        const chatHistoryRef = collection(db, 'users', user.uid, 'chatHistory');
+        const querySnapshot = await getDocs(chatHistoryRef);
+        const batch = writeBatch(db);
+        querySnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+        toast({ title: 'Success', description: 'Chat history cleared.' });
+    } catch (error) {
+        console.error("Error clearing history: ", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to clear chat history.' });
     }
   };
 
@@ -120,9 +167,15 @@ export default function Chatbot() {
 
   return (
     <Card className="w-full max-w-4xl h-[80vh] flex flex-col">
-      <CardHeader>
-        <CardTitle>AI Assistant</CardTitle>
-        <CardDescription>Ask me anything. I'm here to help you, {engineerType ? `the ${engineerType} engineer` : ''}!</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+            <CardTitle>AI Assistant</CardTitle>
+            <CardDescription>Ask me anything. I'm here to help you, {engineerType ? `the ${engineerType} engineer` : ''}!</CardDescription>
+        </div>
+        <Button variant="ghost" size="icon" onClick={handleClearHistory} disabled={!user}>
+            <Trash2 className="h-4 w-4" />
+            <span className="sr-only">Clear History</span>
+        </Button>
       </CardHeader>
       <CardContent className="flex-grow overflow-hidden">
         <ScrollArea className="h-full pr-4" ref={scrollAreaRef}>
@@ -180,12 +233,12 @@ export default function Chatbot() {
               render={({ field }) => (
                 <FormItem className="flex-grow">
                   <FormControl>
-                    <Input placeholder="Type your message..." {...field} disabled={isLoading} autoComplete="off"/>
+                    <Input placeholder="Type your message..." {...field} disabled={isLoading || !user} autoComplete="off"/>
                   </FormControl>
                 </FormItem>
               )}
             />
-            <Button type="submit" size="icon" disabled={isLoading} variant="accent">
+            <Button type="submit" size="icon" disabled={isLoading || !user} variant="accent">
               <Send className="h-4 w-4" />
               <span className="sr-only">Send</span>
             </Button>
@@ -195,4 +248,3 @@ export default function Chatbot() {
     </Card>
   );
 }
-

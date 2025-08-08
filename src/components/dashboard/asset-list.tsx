@@ -34,12 +34,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle } from "lucide-react";
+import { Loader2, PlusCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
+import { auth, db } from "@/lib/firebase";
+import { addDoc, collection, onSnapshot, query, where } from "firebase/firestore";
+import { onAuthStateChanged, type User } from "firebase/auth";
+import { useToast } from "@/hooks/use-toast";
 
 
 const statusVariantMap: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -56,7 +60,6 @@ const criticalityVariantMap: Record<string, "default" | "secondary" | "destructi
 }
 
 const assetSchema = z.object({
-    id: z.string().min(1, "Asset ID is required"),
     name: z.string().min(1, "Asset name is required"),
     type: z.string().min(1, "Asset type is required"),
     location: z.string().min(1, "Location is required"),
@@ -70,12 +73,15 @@ type AssetFormValues = z.infer<typeof assetSchema>;
 
 export default function AssetList() {
     const [assets, setAssets] = useState<Asset[]>([]);
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const { toast } = useToast();
 
     const form = useForm<AssetFormValues>({
         resolver: zodResolver(assetSchema),
         defaultValues: {
-            id: "",
             name: "",
             type: "",
             location: "",
@@ -85,10 +91,49 @@ export default function AssetList() {
         },
     });
 
-    const onSubmit: SubmitHandler<AssetFormValues> = (data) => {
-        setAssets(prev => [...prev, data]);
-        form.reset();
-        setIsDialogOpen(false);
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser);
+            if (currentUser) {
+                const assetsQuery = query(collection(db, "assets"), where("userId", "==", currentUser.uid));
+                const unsubscribeFirestore = onSnapshot(assetsQuery, (snapshot) => {
+                    const userAssets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Asset));
+                    setAssets(userAssets);
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Error fetching assets:", error);
+                    toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch assets.' });
+                    setLoading(false);
+                });
+                return () => unsubscribeFirestore();
+            } else {
+                setLoading(false);
+            }
+        });
+        return () => unsubscribe();
+    }, [toast]);
+
+    const onSubmit: SubmitHandler<AssetFormValues> = async (data) => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to add an asset.' });
+            return;
+        }
+        setIsSaving(true);
+        try {
+            await addDoc(collection(db, "assets"), {
+                ...data,
+                userId: user.uid,
+                id: `ASSET-${Date.now()}` // Simple unique ID
+            });
+            toast({ title: 'Success', description: 'Asset added successfully.' });
+            form.reset();
+            setIsDialogOpen(false);
+        } catch (error) {
+            console.error("Error adding asset:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to add asset.' });
+        } finally {
+            setIsSaving(false);
+        }
     };
 
   return (
@@ -103,7 +148,7 @@ export default function AssetList() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-                <Button size="sm" className="gap-1" variant="accent">
+                <Button size="sm" className="gap-1" variant="accent" disabled={!user}>
                     <PlusCircle className="h-4 w-4" />
                     Add Asset
                 </Button>
@@ -118,17 +163,14 @@ export default function AssetList() {
                         </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
-                            <FormField control={form.control} name="id" render={({ field }) => (
-                                <FormItem><FormLabel>Asset ID</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
                              <FormField control={form.control} name="name" render={({ field }) => (
-                                <FormItem><FormLabel>Asset Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Asset Name</FormLabel><FormControl><Input {...field} placeholder="e.g. Centrifugal Pump P-101"/></FormControl><FormMessage /></FormItem>
                             )} />
                             <FormField control={form.control} name="type" render={({ field }) => (
-                                <FormItem><FormLabel>Asset Type</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Asset Type</FormLabel><FormControl><Input {...field} placeholder="e.g. Pump" /></FormControl><FormMessage /></FormItem>
                             )} />
                             <FormField control={form.control} name="location" render={({ field }) => (
-                                <FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} placeholder="e.g. Sector 7G" /></FormControl><FormMessage /></FormItem>
                             )} />
                              <FormField control={form.control} name="status" render={({ field }) => (
                                 <FormItem>
@@ -168,8 +210,11 @@ export default function AssetList() {
                             )} />
                         </div>
                         <DialogFooter>
-                            <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
-                            <Button type="submit" variant="accent">Add Asset</Button>
+                            <DialogClose asChild><Button type="button" variant="ghost" disabled={isSaving}>Cancel</Button></DialogClose>
+                            <Button type="submit" variant="accent" disabled={isSaving}>
+                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Add Asset
+                            </Button>
                         </DialogFooter>
                     </form>
                 </Form>
@@ -177,7 +222,11 @@ export default function AssetList() {
         </Dialog>
       </CardHeader>
       <CardContent>
-        {assets.length === 0 ? (
+        {loading ? (
+             <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        ) : assets.length === 0 ? (
             <div className="text-center py-12">
                 <p className="text-muted-foreground">No assets found.</p>
                 <p className="text-sm text-muted-foreground">Add new assets to get started.</p>

@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,6 +35,12 @@ import {
 } from '@/components/ui/alert-dialog';
 
 
+interface NotificationPreferences {
+    anomalyAlerts: boolean;
+    maintenanceReminders: boolean;
+    generalUpdates: boolean;
+}
+
 export default function SettingsPage() {
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
@@ -45,6 +51,11 @@ export default function SettingsPage() {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [engineerType, setEngineerType] = useState('');
+  const [notifications, setNotifications] = useState<NotificationPreferences>({
+      anomalyAlerts: true,
+      maintenanceReminders: true,
+      generalUpdates: false,
+  });
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
@@ -61,10 +72,26 @@ export default function SettingsPage() {
                 setDisplayName(userData.displayName || currentUser.displayName || '');
                 setEmail(userData.email || currentUser.email || '');
                 setEngineerType(userData.engineerType || 'Not specified');
+                if (userData.notifications) {
+                    setNotifications(userData.notifications);
+                }
             } else {
-                setDisplayName(currentUser.displayName || '');
-                setEmail(currentUser.email || '');
-                setEngineerType('Not specified');
+                // If no doc, create one with defaults
+                const initialData = {
+                    displayName: currentUser.displayName || '',
+                    email: currentUser.email || '',
+                    engineerType: 'Not specified',
+                    notifications: {
+                        anomalyAlerts: true,
+                        maintenanceReminders: true,
+                        generalUpdates: false,
+                    }
+                };
+                setDoc(userDocRef, initialData);
+                setDisplayName(initialData.displayName);
+                setEmail(initialData.email);
+                setEngineerType(initialData.engineerType);
+                setNotifications(initialData.notifications);
             }
             setLoading(false);
           },
@@ -95,7 +122,7 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       const userDocRef = doc(db, 'users', user.uid);
-      await setDoc(userDocRef, { displayName: displayName }, { merge: true });
+      await updateDoc(userDocRef, { displayName: displayName });
       toast({
         title: 'Profile Updated',
         description: 'Your changes have been saved successfully.',
@@ -110,6 +137,32 @@ export default function SettingsPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleNotificationChange = (id: keyof NotificationPreferences, value: boolean) => {
+      setNotifications(prev => ({...prev, [id]: value}));
+  };
+
+  const handleNotificationSave = async () => {
+      if (!user) return;
+      setSaving(true);
+      try {
+          const userDocRef = doc(db, 'users', user.uid);
+          await updateDoc(userDocRef, { notifications });
+          toast({
+              title: 'Preferences Updated',
+              description: 'Your notification settings have been saved.',
+          });
+      } catch (error) {
+          console.error('Error updating notifications:', error);
+          toast({
+              variant: 'destructive',
+              title: 'Error',
+              description: 'Failed to save your preferences. Please ensure you are online.',
+          });
+      } finally {
+          setSaving(false);
+      }
   };
   
   const PageContent = () => {
@@ -181,26 +234,28 @@ export default function SettingsPage() {
                         <Label htmlFor="anomaly-alerts">Anomaly Alerts</Label>
                         <p className="text-sm text-muted-foreground">Receive an email when the AI detects a critical anomaly in your assets.</p>
                     </div>
-                    <Switch id="anomaly-alerts" defaultChecked/>
+                    <Switch id="anomaly-alerts" checked={notifications.anomalyAlerts} onCheckedChange={(val) => handleNotificationChange('anomalyAlerts', val)} />
                 </div>
                  <div className="flex items-center justify-between space-x-4 rounded-md border p-4">
                     <div className="flex flex-col space-y-1">
                         <Label htmlFor="maintenance-reminders">Maintenance Reminders</Label>
                         <p className="text-sm text-muted-foreground">Get notified about upcoming scheduled maintenance for your equipment.</p>
                     </div>
-                    <Switch id="maintenance-reminders" defaultChecked />
+                    <Switch id="maintenance-reminders" checked={notifications.maintenanceReminders} onCheckedChange={(val) => handleNotificationChange('maintenanceReminders', val)} />
                 </div>
                  <div className="flex items-center justify-between space-x-4 rounded-md border p-4">
                     <div className="flex flex-col space-y-1">
                         <Label htmlFor="general-updates">General Updates</Label>
                         <p className="text-sm text-muted-foreground">Receive news about new features and updates to the PredictAI platform.</p>
                     </div>
-                    <Switch id="general-updates" />
+                    <Switch id="general-updates" checked={notifications.generalUpdates} onCheckedChange={(val) => handleNotificationChange('generalUpdates', val)} />
                 </div>
             </CardContent>
              <CardFooter>
-                <Button variant="accent" disabled>Save Preferences</Button>
-                <p className="text-xs text-muted-foreground ml-4">Note: Saving preferences is not yet implemented.</p>
+                <Button variant="accent" onClick={handleNotificationSave} disabled={saving || loading}>
+                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Preferences
+                </Button>
              </CardFooter>
           </Card>
         </TabsContent>
