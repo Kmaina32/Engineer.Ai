@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -47,6 +46,7 @@ export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isConnecting, setIsConnecting] = useState(true);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [engineerType, setEngineerType] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -62,6 +62,7 @@ export default function Chatbot() {
 
         const unsubscribeFirestore = onSnapshot(q,
           (querySnapshot) => {
+            setConnectionError(null);
             setIsConnecting(false);
             const history = querySnapshot.docs.map(doc => doc.data() as Message);
             if (history.length === 0) {
@@ -73,6 +74,7 @@ export default function Chatbot() {
           (error) => {
             console.error("Firestore chat history error:", error);
             setIsConnecting(false);
+            setConnectionError("Could not load chat history. Please check your connection.");
             toast({
               variant: 'destructive',
               title: 'Connection Error',
@@ -81,10 +83,14 @@ export default function Chatbot() {
           }
         );
         
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-            setEngineerType(userDocSnap.data().engineerType);
-        }
+        getDoc(userDocRef).then(userDocSnap => {
+            if (userDocSnap.exists()) {
+                setEngineerType(userDocSnap.data().engineerType);
+            }
+        }).catch(err => {
+            console.error("Error fetching user doc for chatbot:", err);
+            // Don't block chat for this, just might not have discipline
+        });
 
         return () => unsubscribeFirestore();
       } else {
@@ -115,8 +121,8 @@ export default function Chatbot() {
   }, [messages]);
 
   const onSubmit: SubmitHandler<ChatFormValues> = async (data) => {
-    if (!user) {
-        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to chat.' });
+    if (!user || !!connectionError) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in and online to chat.' });
         return;
     }
     const userMessage: Message = { text: data.message, isUser: true, timestamp: serverTimestamp() };
@@ -134,7 +140,6 @@ export default function Chatbot() {
       });
       const botMessage: Message = { text: result.response, isUser: false, timestamp: serverTimestamp() };
       await addDoc(chatHistoryCollectionRef, botMessage);
-      // The onSnapshot listener will update the state, no need to call setMessages here.
     } catch (error) {
       console.error("Chatbot error:", error);
       const errorMessage: Message = { text: "Sorry, I encountered an error. Please try again.", isUser: false };
@@ -230,6 +235,7 @@ export default function Chatbot() {
         </ScrollArea>
       </CardContent>
       <div className="border-t p-4">
+       {connectionError && <p className="text-center text-xs text-destructive mb-2">{connectionError}</p>}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-center gap-2">
             <FormField
@@ -238,12 +244,12 @@ export default function Chatbot() {
               render={({ field }) => (
                 <FormItem className="flex-grow">
                   <FormControl>
-                    <Input placeholder="Type your message..." {...field} disabled={isLoading || !user} autoComplete="off"/>
+                    <Input placeholder="Type your message..." {...field} disabled={isLoading || !user || !!connectionError} autoComplete="off"/>
                   </FormControl>
                 </FormItem>
               )}
             />
-            <Button type="submit" size="icon" disabled={isLoading || !user} variant="accent">
+            <Button type="submit" size="icon" disabled={isLoading || !user || !!connectionError} variant="accent">
               <Send className="h-4 w-4" />
               <span className="sr-only">Send</span>
             </Button>

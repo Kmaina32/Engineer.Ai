@@ -34,7 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, PlusCircle } from "lucide-react";
+import { Loader2, PlusCircle, AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -77,6 +77,7 @@ export default function AssetList() {
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [connectionError, setConnectionError] = useState<string | null>(null);
     const { toast } = useToast();
 
     const form = useForm<AssetFormValues>({
@@ -97,16 +98,19 @@ export default function AssetList() {
             if (currentUser) {
                 const assetsQuery = query(collection(db, "assets"), where("userId", "==", currentUser.uid));
                 const unsubscribeFirestore = onSnapshot(assetsQuery, (snapshot) => {
+                    setConnectionError(null);
                     const userAssets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Asset));
                     setAssets(userAssets);
                     setLoading(false);
                 }, (error) => {
                     console.error("Error fetching assets:", error);
-                    toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch assets.' });
+                    setConnectionError("Could not fetch assets due to a network issue. Displayed data may be stale.");
+                    toast({ variant: 'destructive', title: 'Network Error', description: 'Could not fetch the latest asset data.' });
                     setLoading(false);
                 });
                 return () => unsubscribeFirestore();
             } else {
+                setAssets([]);
                 setLoading(false);
             }
         });
@@ -123,18 +127,72 @@ export default function AssetList() {
             await addDoc(collection(db, "assets"), {
                 ...data,
                 userId: user.uid,
-                id: `ASSET-${Date.now()}` // Simple unique ID
+                // Firestore generates the ID, so we don't need a custom one.
             });
             toast({ title: 'Success', description: 'Asset added successfully.' });
             form.reset();
             setIsDialogOpen(false);
         } catch (error) {
             console.error("Error adding asset:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to add asset.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to add asset. Please check your connection.' });
         } finally {
             setIsSaving(false);
         }
     };
+
+    const renderContent = () => {
+        if (loading) {
+            return (
+                <div className="flex justify-center items-center h-64">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+            );
+        }
+        
+        if (assets.length === 0 && !connectionError) {
+             return (
+                <div className="text-center py-12">
+                    <p className="text-muted-foreground">No assets found.</p>
+                    <p className="text-sm text-muted-foreground">Add new assets to get started.</p>
+                </div>
+            )
+        }
+
+        return (
+             <Table>
+                <TableHeader>
+                    <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead className="hidden md:table-cell">Type</TableHead>
+                    <TableHead className="hidden md:table-cell">Location</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Criticality</TableHead>
+                    <TableHead className="hidden md:table-cell text-right">Warranty</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {assets.map((asset) => (
+                    <TableRow key={asset.id}>
+                        <TableCell className="font-medium">{asset.name}</TableCell>
+                        <TableCell className="hidden md:table-cell">{asset.type}</TableCell>
+                        <TableCell className="hidden md:table-cell">{asset.location}</TableCell>
+                        <TableCell>
+                        <Badge variant={statusVariantMap[asset.status]} className={asset.status === 'Operational' ? 'bg-green-600/80 text-white' : ''}>
+                            {asset.status}
+                        </Badge>
+                        </TableCell>
+                        <TableCell>
+                            <Badge variant={criticalityVariantMap[asset.criticality]} className="capitalize">
+                                {asset.criticality}
+                            </Badge>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-right">{new Date(asset.warranty).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        )
+    }
 
   return (
     <>
@@ -148,7 +206,7 @@ export default function AssetList() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-                <Button size="sm" className="gap-1" variant="accent" disabled={!user}>
+                <Button size="sm" className="gap-1" variant="accent" disabled={!user || !!connectionError}>
                     <PlusCircle className="h-4 w-4" />
                     Add Asset
                 </Button>
@@ -222,55 +280,17 @@ export default function AssetList() {
         </Dialog>
       </CardHeader>
       <CardContent>
-        {loading ? (
-             <div className="flex justify-center items-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        {connectionError && (
+             <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-md mb-4">
+                <AlertTriangle className="h-4 w-4"/>
+                <p>{connectionError}</p>
             </div>
-        ) : assets.length === 0 ? (
-            <div className="text-center py-12">
-                <p className="text-muted-foreground">No assets found.</p>
-                <p className="text-sm text-muted-foreground">Add new assets to get started.</p>
-            </div>
-        ) : (
-            <Table>
-            <TableHeader>
-                <TableRow>
-                <TableHead>Asset ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead className="hidden md:table-cell">Type</TableHead>
-                <TableHead className="hidden md:table-cell">Location</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Criticality</TableHead>
-                <TableHead className="hidden md:table-cell text-right">Warranty</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {assets.map((asset) => (
-                <TableRow key={asset.id}>
-                    <TableCell className="font-medium">{asset.id}</TableCell>
-                    <TableCell>{asset.name}</TableCell>
-                    <TableCell className="hidden md:table-cell">{asset.type}</TableCell>
-                    <TableCell className="hidden md:table-cell">{asset.location}</TableCell>
-                    <TableCell>
-                    <Badge variant={statusVariantMap[asset.status]} className={asset.status === 'Operational' ? 'bg-green-600/80 text-white' : ''}>
-                        {asset.status}
-                    </Badge>
-                    </TableCell>
-                    <TableCell>
-                        <Badge variant={criticalityVariantMap[asset.criticality]} className="capitalize">
-                            {asset.criticality}
-                        </Badge>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-right">{asset.warranty}</TableCell>
-                </TableRow>
-                ))}
-            </TableBody>
-            </Table>
         )}
+        {renderContent()}
       </CardContent>
        <CardFooter>
         <div className="text-xs text-muted-foreground">
-          Showing <strong>{assets.length > 0 ? 1 : 0}-{assets.length}</strong> of <strong>{assets.length}</strong> assets
+          Showing <strong>{assets.length}</strong> of <strong>{assets.length}</strong> assets.
         </div>
       </CardFooter>
     </Card>

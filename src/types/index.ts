@@ -1,3 +1,4 @@
+
 export type Asset = {
   id: string;
   name: string;
@@ -6,4 +7,5 @@ export type Asset = {
   status: "Operational" | "Warning" | "Critical" | "Maintenance";
   criticality: "High" | "Medium" | "Low";
   warranty: string;
+  userId?: string; // Add userId to link asset to a user
 };

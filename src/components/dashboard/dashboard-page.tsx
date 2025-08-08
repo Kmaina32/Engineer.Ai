@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -21,6 +22,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [isConnecting, setIsConnecting] = useState(true);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -31,17 +33,19 @@ export default function DashboardPage() {
 
         const unsubscribeFirestore = onSnapshot(userDocRef, 
           (doc) => {
-            setIsConnecting(false); // Connected!
+            setConnectionError(null);
+            setIsConnecting(false); 
             if (doc.exists()) {
               setEngineerType(doc.data().engineerType);
             } else {
-              setEngineerType('default'); // Fallback for existing users with no type
+              setEngineerType('default');
             }
             setLoading(false);
           },
           (error) => {
             console.error("Firestore connection error:", error);
-            setIsConnecting(false); // Stop showing connecting on error
+            setConnectionError("Could not connect to the database to retrieve your profile. Some features may be unavailable.");
+            setIsConnecting(false); 
             setLoading(false);
           }
         );
@@ -57,6 +61,9 @@ export default function DashboardPage() {
   }, [router]);
 
   const renderDashboard = () => {
+    if (connectionError) {
+        return <DefaultDashboard /> // Show default dashboard with error state
+    }
     switch (engineerType) {
       case 'software':
         return <SoftwareEngineerDashboard />;

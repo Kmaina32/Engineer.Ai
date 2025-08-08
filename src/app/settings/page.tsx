@@ -47,6 +47,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isConnecting, setIsConnecting] = useState(true);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -61,12 +62,12 @@ export default function SettingsPage() {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        
         const userDocRef = doc(db, 'users', currentUser.uid);
 
         const unsubscribeFirestore = onSnapshot(userDocRef, 
           (doc) => {
-            setIsConnecting(false); // Connected!
+            setConnectionError(null);
+            setIsConnecting(false); 
             if (doc.exists()) {
                 const userData = doc.data();
                 setDisplayName(userData.displayName || currentUser.displayName || '');
@@ -76,7 +77,6 @@ export default function SettingsPage() {
                     setNotifications(userData.notifications);
                 }
             } else {
-                // If no doc, create one with defaults
                 const initialData = {
                     displayName: currentUser.displayName || '',
                     email: currentUser.email || '',
@@ -87,7 +87,7 @@ export default function SettingsPage() {
                         generalUpdates: false,
                     }
                 };
-                setDoc(userDocRef, initialData);
+                setDoc(userDocRef, initialData).catch(e => console.error("Error creating user doc:", e));
                 setDisplayName(initialData.displayName);
                 setEmail(initialData.email);
                 setEngineerType(initialData.engineerType);
@@ -97,12 +97,13 @@ export default function SettingsPage() {
           },
           (error) => {
             console.error("Firestore connection error:", error);
+            setConnectionError("Could not connect to the database. Your data may be outdated.");
             setIsConnecting(false);
             setLoading(false);
             toast({
               variant: 'destructive',
               title: 'Connection Error',
-              description: 'Could not fetch your profile data. Please check your connection.',
+              description: 'Could not fetch your profile data. Please check your connection and try again.',
             });
           }
         );
@@ -179,8 +180,18 @@ export default function SettingsPage() {
        return (
         <div className="flex justify-center items-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="ml-4">Loading your settings...</p>
         </div>
       );
+    }
+
+    if (connectionError && !user) {
+        return (
+             <div className="text-center py-12 border rounded-lg">
+                <p className="text-destructive font-semibold">Connection Error</p>
+                <p className="text-sm text-muted-foreground">{connectionError}</p>
+            </div>
+        )
     }
 
     return (
@@ -213,7 +224,7 @@ export default function SettingsPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleProfileSave} disabled={saving || loading} variant="accent">
+              <Button onClick={handleProfileSave} disabled={saving || loading || !!connectionError} variant="accent">
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Changes
               </Button>
@@ -252,7 +263,7 @@ export default function SettingsPage() {
                 </div>
             </CardContent>
              <CardFooter>
-                <Button variant="accent" onClick={handleNotificationSave} disabled={saving || loading}>
+                <Button variant="accent" onClick={handleNotificationSave} disabled={saving || loading || !!connectionError}>
                     {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Preferences
                 </Button>

@@ -24,11 +24,13 @@ export function DefaultDashboard() {
           const userAssets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Asset));
           setAssets(userAssets);
           setLoading(false);
-        }, () => {
+        }, (error) => {
+          console.error("Error fetching assets for dashboard:", error)
           setLoading(false);
         });
         return () => unsubscribeFirestore();
       } else {
+        setAssets([]);
         setLoading(false);
       }
     });
@@ -46,7 +48,9 @@ export function DefaultDashboard() {
       </CardHeader>
       <CardContent>
         {loading ? (
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <div className="pt-2">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
         ) : (
             <>
                 <div className="text-2xl font-bold">{value}</div>
