@@ -9,6 +9,7 @@ import { onAuthStateChanged, type User } from "firebase/auth";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import type { Asset } from "@/types";
+import NewsletterSignup from "../dashboard/newsletter-signup";
 
 export function DefaultDashboard() {
   const [user, setUser] = useState<User | null>(null);
@@ -87,8 +88,9 @@ export function DefaultDashboard() {
             />
         </div>
 
-        <div>
-            <AssetList />
+        <div className="grid gap-4">
+          <NewsletterSignup />
+          <AssetList />
         </div>
     </div>
   );
