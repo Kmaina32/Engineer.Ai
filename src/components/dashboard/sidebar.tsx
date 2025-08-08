@@ -6,6 +6,7 @@ import {
   Settings,
   Wrench,
   LifeBuoy,
+  BrainCircuit
 } from "lucide-react";
 
 import {
@@ -51,6 +52,18 @@ export default function Sidebar() {
               </Link>
             </TooltipTrigger>
             <TooltipContent side="right">Assets</TooltipContent>
+          </Tooltip>
+           <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                href="/ai-tools"
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+              >
+                <BrainCircuit className="h-5 w-5" />
+                <span className="sr-only">AI Tools</span>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="right">AI Tools</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>

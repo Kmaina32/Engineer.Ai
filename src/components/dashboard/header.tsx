@@ -11,7 +11,8 @@ import {
   Bot,
   Wrench,
   LifeBuoy,
-  Settings
+  Settings,
+  BrainCircuit
 } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { signOut } from "firebase/auth";
@@ -89,6 +90,13 @@ export default function Header() {
           >
             <CircuitBoard className="h-5 w-5" />
             Assets
+          </Link>
+          <Link
+            href="/ai-tools"
+            className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+          >
+            <BrainCircuit className="h-5 w-5" />
+            AI Tools
           </Link>
           <Link
             href="/chatbot"
