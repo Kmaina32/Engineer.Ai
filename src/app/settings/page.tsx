@@ -175,7 +175,7 @@ export default function SettingsPage() {
               <CardTitle>Account Management</CardTitle>
               <CardDescription>
                 Manage your account settings. (Coming Soon)
-              </CardDescription>
+              </-carddescription>
             </Header>
               <CardContent>
               <p className="text-muted-foreground">This feature is under development. Check back later!</p>
