@@ -59,10 +59,10 @@ export default function Sidebar() {
                 className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
               >
                 <Bot className="h-5 w-5" />
-                <span className="sr-only">AI Tools</span>
+                <span className="sr-only">Chatbot</span>
               </Link>
             </TooltipTrigger>
-            <TooltipContent side="right">AI Tools</TooltipContent>
+            <TooltipContent side="right">Chatbot</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
