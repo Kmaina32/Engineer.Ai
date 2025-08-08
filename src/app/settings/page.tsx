@@ -27,7 +27,7 @@ export default function SettingsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(true); 
+  const [isConnecting, setIsConnecting] = useState(true);
 
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -69,8 +69,10 @@ export default function SettingsPage() {
 
         return () => unsubscribeFirestore();
       } else {
+        // No user, no need to connect to Firestore for user data
         setIsConnecting(false);
         setLoading(false);
+        // Optionally, redirect to login if no user is a hard requirement for this page
       }
     });
 
@@ -197,4 +199,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
