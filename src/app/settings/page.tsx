@@ -114,7 +114,7 @@ export default function SettingsPage() {
         <div className="flex justify-center items-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
-      )
+      );
     }
 
     return (
@@ -181,8 +181,8 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    )
-  }
+    );
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
