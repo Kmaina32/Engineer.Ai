@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -8,10 +9,10 @@ import { Bot, User, Loader2, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
-import { generateMaintenanceRecommendations } from '@/ai/flows/generate-maintenance-recommendations'; // Assuming a generic chat flow
+import { generalChat } from '@/ai/flows/general-chat';
 import { cn } from '@/lib/utils';
 
 const chatSchema = z.object({
@@ -27,10 +28,18 @@ interface Message {
 
 export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([
-    { text: "Hello! I'm your predictive maintenance assistant. How can I help you today?", isUser: false },
+    { text: "Hello! I'm your AI assistant. How can I help you today?", isUser: false },
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [engineerType, setEngineerType] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // This is a temporary way to get the user's discipline.
+    // In a real app, this would come from a database after login.
+    const storedType = localStorage.getItem('engineerType');
+    setEngineerType(storedType);
+  }, []);
 
   const form = useForm<ChatFormValues>({
     resolver: zodResolver(chatSchema),
@@ -59,13 +68,11 @@ export default function Chatbot() {
     form.reset();
 
     try {
-      // This is a placeholder. You'd likely have a more generic chat flow.
-      // We're adapting the maintenance flow for a conversational example.
-      const result = await generateMaintenanceRecommendations({
-        sensorData: data.message, // Using the message as sensor data for this example
-        equipmentType: 'General Inquiry',
+      const result = await generalChat({
+        userQuery: data.message,
+        userDiscipline: engineerType || 'General',
       });
-      const botMessage: Message = { text: result.recommendation, isUser: false };
+      const botMessage: Message = { text: result.response, isUser: false };
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
       console.error("Chatbot error:", error);
@@ -80,7 +87,7 @@ export default function Chatbot() {
     <Card className="w-full max-w-2xl h-[70vh] flex flex-col">
       <CardHeader>
         <CardTitle>AI Assistant</CardTitle>
-        <CardDescription>Ask me anything about your equipment or maintenance schedules.</CardDescription>
+        <CardDescription>Ask me anything. I'm here to help you, {engineerType ? `the ${engineerType} engineer` : ''}!</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow overflow-hidden">
         <ScrollArea className="h-full pr-4" ref={scrollAreaRef}>

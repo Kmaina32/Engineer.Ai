@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -34,7 +35,8 @@ export default function SignupPage() {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       // Here you would typically also save the engineerType to your database
-      // associated with the new user.
+      // associated with the new user. For now, we'll store it in localStorage.
+      localStorage.setItem('engineerType', engineerType);
       router.push('/');
     } catch (error: any) {
       toast({
@@ -91,6 +93,7 @@ export default function SignupPage() {
                 <SelectItem value="civil">Civil Engineer</SelectItem>
                 <SelectItem value="chemical">Chemical Engineer</SelectItem>
                 <SelectItem value="industrial">Industrial Engineer</SelectItem>
+                <SelectItem value="software">Software Engineer</SelectItem>
               </SelectContent>
             </Select>
           </div>
