@@ -4,6 +4,7 @@ import Header from "@/components/dashboard/header";
 import OverviewCards from "@/components/dashboard/overview-cards";
 import Sidebar from "@/components/dashboard/sidebar";
 import SensorChart from "@/components/dashboard/sensor-chart";
+import Chatbot from "../chatbot/chatbot";
 
 export default function DashboardPage() {
   return (
@@ -12,14 +13,7 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
         <Header />
         <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-          <OverviewCards />
-          <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
-            <div className="xl:col-span-2">
-              <AssetList />
-            </div>
-            <SensorChart />
-          </div>
-          <AiTools />
+          <Chatbot />
         </main>
       </div>
     </div>

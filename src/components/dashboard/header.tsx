@@ -50,28 +50,28 @@ export default function Header() {
         <SheetContent side="left" className="sm:max-w-xs">
           <nav className="grid gap-6 text-lg font-medium">
           <Link
-            href="#"
+            href="/"
             className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-accent text-lg font-semibold text-accent-foreground md:text-base"
           >
             <LogoIcon className="h-5 w-5 transition-all group-hover:scale-110" />
             <span className="sr-only">PredictAI</span>
           </Link>
           <Link
-            href="#"
-            className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+            href="/"
+            className="flex items-center gap-4 px-2.5 text-foreground"
           >
             <Home className="h-5 w-5" />
             Dashboard
           </Link>
           <Link
             href="#"
-            className="flex items-center gap-4 px-2.5 text-foreground"
+            className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
           >
             <CircuitBoard className="h-5 w-5" />
             Assets
           </Link>
           <Link
-            href="#"
+            href="/chatbot"
             className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
           >
             <Bot className="h-5 w-5" />
@@ -91,7 +91,7 @@ export default function Header() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="#">Dashboard</Link>
+              <Link href="/">Dashboard</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
