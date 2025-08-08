@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { auth, db, googleProvider } from '@/lib/firebase';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -51,6 +51,44 @@ export default function SignupPage() {
       toast({
         variant: 'destructive',
         title: 'Signup Failed',
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    if (!engineerType) {
+      toast({
+        variant: 'destructive',
+        title: 'Signup Failed',
+        description: 'Please select your engineering discipline first.',
+      });
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (!userDocSnap.exists()) {
+        await setDoc(doc(db, "users", user.uid), {
+          uid: user.uid,
+          email: user.email,
+          engineerType: engineerType,
+          displayName: user.displayName || user.email?.split('@')[0],
+        });
+      }
+
+      router.push('/');
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Google Sign-Up Failed',
         description: error.message,
       });
     } finally {
@@ -123,6 +161,20 @@ export default function SignupPage() {
             </div>
             <Button type="submit" className="w-full" variant="accent" disabled={loading}>
               {loading ? 'Creating Account...' : 'Create Account'}
+            </Button>
+             <div className="relative my-2">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+             <Button variant="outline" className="w-full" onClick={handleGoogleSignUp} disabled={loading}>
+                 <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.5 173.5 58.1l-73.2 73.2C322.7 114.2 287.2 96 248 96c-88.8 0-160.1 71.1-160.1 160s71.3 160 160.1 160c97.2 0 131.2-67.3 135-100.2H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.1z"></path></svg>
+                Sign up with Google
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">

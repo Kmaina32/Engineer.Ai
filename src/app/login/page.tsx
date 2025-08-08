@@ -3,8 +3,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, signInWithPopup } from 'firebase/auth';
+import { auth, db, googleProvider } from '@/lib/firebase';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,6 +32,65 @@ export default function LoginPage() {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      
+      // Check if user already exists in Firestore
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (!userDocSnap.exists()) {
+        // If user doesn't exist, create a new document
+         await setDoc(userDocRef, {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || user.email?.split('@')[0],
+          engineerType: 'Not specified', // Default value
+        });
+      }
+      
+      router.push('/');
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Google Sign-In Failed',
+            description: error.message,
+        });
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({
+        variant: 'destructive',
+        title: 'Input Required',
+        description: 'Please enter your email address to reset your password.',
+      });
+      return;
+    }
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast({
+        title: 'Password Reset Email Sent',
+        description: 'Check your inbox for a link to reset your password.',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Password Reset Failed',
         description: error.message,
       });
     } finally {
@@ -75,6 +135,9 @@ export default function LoginPage() {
             <div className="grid gap-2">
               <div className="flex items-center">
                 <Label htmlFor="password">Password</Label>
+                 <button type="button" onClick={handleForgotPassword} className="ml-auto inline-block text-sm underline text-accent" disabled={loading}>
+                  Forgot your password?
+                </button>
               </div>
                <div className="relative">
                 <Input 
@@ -99,6 +162,10 @@ export default function LoginPage() {
             </div>
             <Button type="submit" className="w-full" disabled={loading} variant="accent">
               {loading ? 'Logging in...' : 'Login'}
+            </Button>
+             <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
+                <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.5 173.5 58.1l-73.2 73.2C322.7 114.2 287.2 96 248 96c-88.8 0-160.1 71.1-160.1 160s71.3 160 160.1 160c97.2 0 131.2-67.3 135-100.2H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.1z"></path></svg>
+                Sign in with Google
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">
