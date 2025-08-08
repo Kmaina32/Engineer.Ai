@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Loader2, X } from 'lucide-react';
+import { Mail, Loader2, X, BellRing } from 'lucide-react';
+import { useNotifications } from '@/context/notification-context';
 
 const newsletterSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -20,6 +21,7 @@ export default function NewsletterSignup() {
   const [isSubscribed, setIsSubscribed] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
 
   useEffect(() => {
     const subscribed = localStorage.getItem('newsletter_subscribed');
@@ -45,6 +47,12 @@ export default function NewsletterSignup() {
     toast({
       title: "Subscription Successful!",
       description: `Thank you for subscribing, ${data.email}!`,
+    });
+
+    addNotification({
+        title: "Newsletter Subscribed",
+        description: "You'll now receive our latest updates.",
+        icon: BellRing,
     });
   };
 

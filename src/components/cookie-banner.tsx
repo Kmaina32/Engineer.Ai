@@ -4,10 +4,12 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Cookie } from 'lucide-react';
+import { Cookie, Check } from 'lucide-react';
+import { useNotifications } from '@/context/notification-context';
 
 export default function CookieBanner() {
   const [showBanner, setShowBanner] = useState(false);
+  const { addNotification } = useNotifications();
 
   useEffect(() => {
     const consent = localStorage.getItem('cookie_consent');
@@ -26,6 +28,12 @@ export default function CookieBanner() {
         d.setTime(d.getTime() + (365*24*60*60*1000));
         const expires = "expires="+ d.toUTCString();
         document.cookie = "predictai_consent=true;" + expires + ";path=/";
+
+         addNotification({
+            title: "Cookies Accepted",
+            description: "Thank you for accepting our cookie policy.",
+            icon: Check
+        });
     }
   };
 

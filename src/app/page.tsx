@@ -9,16 +9,24 @@ import DashboardPage from '@/components/dashboard/dashboard-page';
 import { LogoIcon } from '@/components/icons';
 import { Toaster } from '@/components/ui/toaster';
 import CookieBanner from '@/components/cookie-banner';
+import { useNotifications } from '@/context/notification-context';
+import { Check } from 'lucide-react';
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { addNotification } = useNotifications();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser(user);
+         addNotification({
+            title: "Login Successful",
+            description: "Welcome back to your PredictAI dashboard.",
+            icon: Check,
+        });
       } else {
         router.push('/login');
       }
@@ -27,7 +35,7 @@ export default function Home() {
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [router]);
+  }, [router, addNotification]);
 
   if (loading) {
     return (
