@@ -19,7 +19,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [engineerType, setEngineerType] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // New state for password visibility
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -43,6 +43,7 @@ export default function SignupPage() {
         uid: user.uid,
         email: user.email,
         engineerType: engineerType,
+        displayName: user.email?.split('@')[0] || 'New User', // Add a default display name
       });
 
       router.push('/');
@@ -86,7 +87,7 @@ export default function SignupPage() {
               <div className="relative">
                 <Input 
                   id="password" 
-                  type={showPassword ? "text" : "password"} // Dynamic type based on state
+                  type={showPassword ? "text" : "password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -97,7 +98,7 @@ export default function SignupPage() {
                   variant="ghost"
                   size="sm"
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowPassword((prev) => !prev)} // Toggle state on click
+                  onClick={() => setShowPassword((prev) => !prev)}
                   disabled={loading}
                 >
                   {showPassword ? 'Hide' : 'Show'}
