@@ -173,7 +173,7 @@ export default function SettingsPage() {
               <CardTitle>Account Management</CardTitle>
               <CardDescription>
                 Manage your account settings. (Coming Soon)
-              </CardDescription>
+              </-CardDescription>
             </Header>
               <CardContent>
               <p className="text-muted-foreground">This feature is under development. Check back later!</p>
@@ -197,3 +197,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+
