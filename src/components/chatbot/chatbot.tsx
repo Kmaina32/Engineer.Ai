@@ -14,6 +14,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { generalChat } from '@/ai/flows/general-chat';
 import { cn } from '@/lib/utils';
+import { onAuthStateChanged, type User as AuthUser } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 
 const chatSchema = z.object({
   message: z.string().min(1, "Message cannot be empty"),
@@ -35,10 +38,16 @@ export default function Chatbot() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // This is a temporary way to get the user's discipline.
-    // In a real app, this would come from a database after login.
-    const storedType = localStorage.getItem('engineerType');
-    setEngineerType(storedType);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          setEngineerType(userDoc.data().engineerType);
+        }
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
   const form = useForm<ChatFormValues>({

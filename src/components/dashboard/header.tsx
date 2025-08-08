@@ -49,8 +49,6 @@ export default function Header() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      // This is the key part: clear the discipline when logging out.
-      localStorage.removeItem('engineerType'); 
       router.push('/login');
     } catch (error) {
       console.error("Failed to log out", error);

@@ -4,7 +4,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,9 +35,16 @@ export default function SignupPage() {
     }
     setLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      // In a real app, this would be saved to a database profile.
-      localStorage.setItem('engineerType', engineerType);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Save user profile to Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
+        email: user.email,
+        engineerType: engineerType,
+      });
+
       router.push('/');
     } catch (error: any) {
       toast({
