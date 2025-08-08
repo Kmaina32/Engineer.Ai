@@ -41,8 +41,8 @@ export default function DashboardPage() {
           },
           (error) => {
             console.error("Firestore connection error:", error);
-            setIsConnecting(true); // Keep showing connecting state on error
-            setLoading(false); // Stop general loading
+            setIsConnecting(false); // Stop showing connecting on error
+            setLoading(false);
           }
         );
         return () => unsubscribeFirestore();

@@ -72,7 +72,12 @@ export default function Chatbot() {
           },
           (error) => {
             console.error("Firestore chat history error:", error);
-            setIsConnecting(true);
+            setIsConnecting(false);
+            toast({
+              variant: 'destructive',
+              title: 'Connection Error',
+              description: 'Could not fetch chat history. Please check your connection.',
+            });
           }
         );
         
@@ -89,7 +94,7 @@ export default function Chatbot() {
     });
 
     return () => unsubscribeAuth();
-  }, []);
+  }, [toast]);
 
   const form = useForm<ChatFormValues>({
     resolver: zodResolver(chatSchema),

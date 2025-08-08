@@ -97,7 +97,7 @@ export default function SettingsPage() {
           },
           (error) => {
             console.error("Firestore connection error:", error);
-            setIsConnecting(true);
+            setIsConnecting(false);
             setLoading(false);
             toast({
               variant: 'destructive',
