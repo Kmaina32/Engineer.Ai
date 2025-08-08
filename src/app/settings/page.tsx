@@ -36,20 +36,36 @@ export default function SettingsPage() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        const userDocRef = doc(db, 'users', currentUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setDisplayName(userData.displayName || currentUser.displayName || '');
-          setEmail(userData.email || currentUser.email || '');
-          setEngineerType(userData.engineerType || 'Not specified');
+        try {
+            const userDocRef = doc(db, 'users', currentUser.uid);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                setDisplayName(userData.displayName || currentUser.displayName || '');
+                setEmail(userData.email || currentUser.email || '');
+                setEngineerType(userData.engineerType || 'Not specified');
+            } else {
+                // Handle case where user exists in Auth but not Firestore
+                setDisplayName(currentUser.displayName || '');
+                setEmail(currentUser.email || '');
+                setEngineerType('Not specified');
+            }
+        } catch (error) {
+            console.error("Error fetching user data:", error);
+            // This can happen if the client is offline.
+            // We can choose to show an error or just default values.
+             toast({
+                variant: 'destructive',
+                title: 'Connection Error',
+                description: 'Could not fetch your profile data. Please check your connection.',
+            });
         }
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [toast]);
 
   const handleProfileSave = async () => {
     if (!user) return;
@@ -66,7 +82,7 @@ export default function SettingsPage() {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to update your profile.',
+        description: 'Failed to update your profile. Please ensure you are online.',
       });
     } finally {
       setSaving(false);
@@ -114,7 +130,7 @@ export default function SettingsPage() {
                     </div>
                   </CardContent>
                   <CardFooter>
-                    <Button onClick={handleProfileSave} disabled={saving} variant="accent">
+                    <Button onClick={handleProfileSave} disabled={saving || loading} variant="accent">
                       {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Save Changes
                     </Button>
@@ -141,7 +157,7 @@ export default function SettingsPage() {
                     <CardDescription>
                       Manage your account settings. (Coming Soon)
                     </CardDescription>
-                  </CardHeader>
+                  </Header>
                    <CardContent>
                     <p className="text-muted-foreground">This feature is under development. Check back later!</p>
                   </CardContent>
