@@ -9,7 +9,9 @@ import {
   CircuitBoard,
   Bell,
   Bot,
-  Wrench
+  Wrench,
+  LifeBuoy,
+  Settings
 } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { signOut } from "firebase/auth";
@@ -102,6 +104,20 @@ export default function Header() {
             <Wrench className="h-5 w-5" />
             Maintenance
           </Link>
+            <Link
+              href="/support"
+              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+            >
+              <LifeBuoy className="h-5 w-5" />
+              Support
+            </Link>
+             <Link
+              href="/settings"
+              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+            >
+              <Settings className="h-5 w-5" />
+              Settings
+            </Link>
           </nav>
         </SheetContent>
       </Sheet>
@@ -153,8 +169,8 @@ export default function Header() {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Settings</DropdownMenuItem>
-          <DropdownMenuItem>Support</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push('/support')}>Support</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
         </DropdownMenuContent>
