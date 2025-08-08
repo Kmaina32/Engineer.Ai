@@ -4,7 +4,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { Zap, WaveSine, Thermometer, BatteryCharging } from "lucide-react";
+import { Zap, Waves, Thermometer, BatteryCharging } from "lucide-react";
 
 const chartData = [
   { day: "Monday", kwh: 55 },
@@ -51,7 +51,7 @@ export function ElectricalEngineerDashboard() {
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Grid Frequency</CardTitle>
-                <WaveSine className="h-4 w-4 text-muted-foreground" />
+                <Waves className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
                 <div className="text-2xl font-bold">50.01 Hz</div>
