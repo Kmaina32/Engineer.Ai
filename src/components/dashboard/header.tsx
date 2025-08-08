@@ -1,3 +1,6 @@
+
+"use client"
+
 import Link from "next/link";
 import {
   PanelLeft,
@@ -8,6 +11,9 @@ import {
   Bot,
   Wrench
 } from "lucide-react";
+import { useRouter } from 'next/navigation';
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 import {
   Breadcrumb,
@@ -38,6 +44,20 @@ import {
 
 
 export default function Header() {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      // This is the key part: clear the discipline when logging out.
+      localStorage.removeItem('engineerType'); 
+      router.push('/login');
+    } catch (error) {
+      console.error("Failed to log out", error);
+    }
+  };
+
+
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
       <Sheet>
@@ -138,7 +158,7 @@ export default function Header() {
           <DropdownMenuItem>Settings</DropdownMenuItem>
           <DropdownMenuItem>Support</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Logout</DropdownMenuItem>
+          <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </header>
