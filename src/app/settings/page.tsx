@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,44 +27,54 @@ export default function SettingsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
+  const [isConnecting, setIsConnecting] = useState(true); 
+
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [engineerType, setEngineerType] = useState('');
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        try {
-            const userDocRef = doc(db, 'users', currentUser.uid);
-            const userDoc = await getDoc(userDocRef);
-            if (userDoc.exists()) {
-                const userData = userDoc.data();
+        
+        const userDocRef = doc(db, 'users', currentUser.uid);
+
+        const unsubscribeFirestore = onSnapshot(userDocRef, 
+          (doc) => {
+            setIsConnecting(false); // Connected!
+            if (doc.exists()) {
+                const userData = doc.data();
                 setDisplayName(userData.displayName || currentUser.displayName || '');
                 setEmail(userData.email || currentUser.email || '');
                 setEngineerType(userData.engineerType || 'Not specified');
             } else {
-                // Handle case where user exists in Auth but not Firestore
                 setDisplayName(currentUser.displayName || '');
                 setEmail(currentUser.email || '');
                 setEngineerType('Not specified');
             }
-        } catch (error) {
-            console.error("Error fetching user data:", error);
-            // This can happen if the client is offline.
-            // We can choose to show an error or just default values.
-             toast({
-                variant: 'destructive',
-                title: 'Connection Error',
-                description: 'Could not fetch your profile data. Please check your connection.',
+            setLoading(false);
+          },
+          (error) => {
+            console.error("Firestore connection error:", error);
+            setIsConnecting(true);
+            setLoading(false);
+            toast({
+              variant: 'destructive',
+              title: 'Connection Error',
+              description: 'Could not fetch your profile data. Please check your connection.',
             });
-        }
+          }
+        );
+
+        return () => unsubscribeFirestore();
+      } else {
+        setIsConnecting(false);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => unsubscribeAuth();
   }, [toast]);
 
   const handleProfileSave = async () => {
@@ -88,6 +98,91 @@ export default function SettingsPage() {
       setSaving(false);
     }
   };
+  
+  const PageContent = () => {
+    if (isConnecting) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="ml-4">Connecting to database...</p>
+        </div>
+      );
+    }
+    
+    if (loading) {
+       return (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      )
+    }
+
+    return (
+       <Tabs defaultValue="profile">
+        <TabsList>
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          <TabsTrigger value="account">Account</TabsTrigger>
+        </TabsList>
+        <TabsContent value="profile">
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Profile</CardTitle>
+              <CardDescription>
+                Manage your personal information.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="displayName">Display Name</Label>
+                <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Enter your name"/>
+              </div>
+                <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" value={email} disabled />
+              </div>
+                <div className="space-y-2">
+                <Label htmlFor="engineerType">Engineering Discipline</Label>
+                <Input id="engineerType" value={engineerType} disabled />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button onClick={handleProfileSave} disabled={saving || loading} variant="accent">
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        <TabsContent value="notifications">
+            <Card>
+            <CardHeader>
+              <CardTitle>Notifications</CardTitle>
+              <CardDescription>
+                Manage how you receive notifications from us. (Coming Soon)
+              </CardDescription>
+            </CardHeader>
+              <CardContent>
+              <p className="text-muted-foreground">This feature is under development. Check back later!</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="account">
+            <Card>
+            <CardHeader>
+              <CardTitle>Account Management</CardTitle>
+              <CardDescription>
+                Manage your account settings. (Coming Soon)
+              </CardDescription>
+            </Header>
+              <CardContent>
+              <p className="text-muted-foreground">This feature is under development. Check back later!</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    )
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -96,75 +191,7 @@ export default function SettingsPage() {
         <Header />
         <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
           <h1 className="text-2xl font-bold tracking-tight my-4">Settings</h1>
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <Tabs defaultValue="profile">
-              <TabsList>
-                <TabsTrigger value="profile">Profile</TabsTrigger>
-                <TabsTrigger value="notifications">Notifications</TabsTrigger>
-                <TabsTrigger value="account">Account</TabsTrigger>
-              </TabsList>
-              <TabsContent value="profile">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Your Profile</CardTitle>
-                    <CardDescription>
-                      Manage your personal information.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="displayName">Display Name</Label>
-                      <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Enter your name"/>
-                    </div>
-                     <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input id="email" type="email" value={email} disabled />
-                    </div>
-                     <div className="space-y-2">
-                      <Label htmlFor="engineerType">Engineering Discipline</Label>
-                      <Input id="engineerType" value={engineerType} disabled />
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button onClick={handleProfileSave} disabled={saving || loading} variant="accent">
-                      {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Save Changes
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </TabsContent>
-              <TabsContent value="notifications">
-                 <Card>
-                  <CardHeader>
-                    <CardTitle>Notifications</CardTitle>
-                    <CardDescription>
-                      Manage how you receive notifications from us. (Coming Soon)
-                    </CardDescription>
-                  </CardHeader>
-                   <CardContent>
-                    <p className="text-muted-foreground">This feature is under development. Check back later!</p>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              <TabsContent value="account">
-                 <Card>
-                  <CardHeader>
-                    <CardTitle>Account Management</CardTitle>
-                    <CardDescription>
-                      Manage your account settings. (Coming Soon)
-                    </CardDescription>
-                  </Header>
-                   <CardContent>
-                    <p className="text-muted-foreground">This feature is under development. Check back later!</p>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          )}
+          <PageContent />
         </main>
       </div>
     </div>
