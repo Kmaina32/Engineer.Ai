@@ -7,6 +7,8 @@ import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import DashboardPage from '@/components/dashboard/dashboard-page';
 import { LogoIcon } from '@/components/icons';
+import { Toaster } from '@/components/ui/toaster';
+import CookieBanner from '@/components/cookie-banner';
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
@@ -37,7 +39,13 @@ export default function Home() {
   }
 
   if (user) {
-    return <DashboardPage />;
+    return (
+        <>
+            <DashboardPage />
+            <Toaster />
+            <CookieBanner />
+        </>
+    );
   }
 
   // This will be briefly shown before the redirect kicks in
