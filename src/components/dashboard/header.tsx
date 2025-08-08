@@ -12,7 +12,8 @@ import {
   Wrench,
   LifeBuoy,
   Settings,
-  BrainCircuit
+  BrainCircuit,
+  Check
 } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { signOut } from "firebase/auth";
@@ -39,11 +40,18 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { LogoIcon } from "@/components/icons";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card";
+
+
+const notifications = [
+    { title: "Critical Alert: Pump P-102", description: "Vibration levels exceeded threshold by 15%. Immediate inspection required.", time: "2 min ago" },
+    { title: "Maintenance Reminder", description: "Scheduled maintenance for Conveyor C-3 is due tomorrow.", time: "1 hour ago" },
+    { title: "New Feature Unlocked", description: "The AI-powered code refactoring tool is now available for all software engineers.", time: "1 day ago" },
+]
 
 
 export default function Header() {
@@ -150,17 +158,43 @@ export default function Header() {
           className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
         />
       </div>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full">
+      <Popover>
+        <PopoverTrigger asChild>
+             <Button variant="ghost" size="icon" className="rounded-full relative">
               <Bell className="h-5 w-5" />
               <span className="sr-only">Notifications</span>
+              <span className="absolute top-1 right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-accent/80"></span>
+              </span>
             </Button>
-          </TooltipTrigger>
-          <TooltipContent>Notifications</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+        </PopoverTrigger>
+        <PopoverContent className="w-96" align="end">
+           <Card className="border-0 shadow-none">
+            <CardHeader className="flex-row items-center justify-between p-4 space-y-0">
+                <CardTitle className="text-lg">Notifications</CardTitle>
+                 <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
+                    <Check className="h-4 w-4 mr-1"/>
+                    Mark all as read
+                </Button>
+            </CardHeader>
+            <CardContent className="p-0">
+                <div className="space-y-2">
+                    {notifications.map((notification, index) => (
+                         <div key={index} className="flex items-start gap-4 p-4 border-t hover:bg-muted/50">
+                            <div className="w-2 h-2 rounded-full bg-accent mt-2 animate-pulse"/>
+                            <div className="grid gap-1">
+                                <p className="font-semibold">{notification.title}</p>
+                                <p className="text-sm text-muted-foreground">{notification.description}</p>
+                                <p className="text-xs text-muted-foreground">{notification.time}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+           </Card>
+        </PopoverContent>
+      </Popover>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button

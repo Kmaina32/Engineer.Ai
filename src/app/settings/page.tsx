@@ -21,6 +21,19 @@ import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/dashboard/header';
 import Sidebar from '@/components/dashboard/sidebar';
 import { Loader2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -69,10 +82,8 @@ export default function SettingsPage() {
 
         return () => unsubscribeFirestore();
       } else {
-        // No user, no need to connect to Firestore for user data
         setIsConnecting(false);
         setLoading(false);
-        // Optionally, redirect to login if no user is a hard requirement for this page
       }
     });
 
@@ -157,30 +168,92 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
         <TabsContent value="notifications">
-            <Card>
+          <Card>
             <CardHeader>
               <CardTitle>Notifications</CardTitle>
               <CardDescription>
-                Manage how you receive notifications from us. (Coming Soon)
+                Manage how you receive notifications from us.
               </CardDescription>
             </CardHeader>
-              <CardContent>
-              <p className="text-muted-foreground">This feature is under development. Check back later!</p>
+            <CardContent className="space-y-6">
+                <div className="flex items-center justify-between space-x-4 rounded-md border p-4">
+                    <div className="flex flex-col space-y-1">
+                        <Label htmlFor="anomaly-alerts">Anomaly Alerts</Label>
+                        <p className="text-sm text-muted-foreground">Receive an email when the AI detects a critical anomaly in your assets.</p>
+                    </div>
+                    <Switch id="anomaly-alerts" defaultChecked/>
+                </div>
+                 <div className="flex items-center justify-between space-x-4 rounded-md border p-4">
+                    <div className="flex flex-col space-y-1">
+                        <Label htmlFor="maintenance-reminders">Maintenance Reminders</Label>
+                        <p className="text-sm text-muted-foreground">Get notified about upcoming scheduled maintenance for your equipment.</p>
+                    </div>
+                    <Switch id="maintenance-reminders" defaultChecked />
+                </div>
+                 <div className="flex items-center justify-between space-x-4 rounded-md border p-4">
+                    <div className="flex flex-col space-y-1">
+                        <Label htmlFor="general-updates">General Updates</Label>
+                        <p className="text-sm text-muted-foreground">Receive news about new features and updates to the PredictAI platform.</p>
+                    </div>
+                    <Switch id="general-updates" />
+                </div>
             </CardContent>
+             <CardFooter>
+                <Button variant="accent" disabled>Save Preferences</Button>
+                <p className="text-xs text-muted-foreground ml-4">Note: Saving preferences is not yet implemented.</p>
+             </CardFooter>
           </Card>
         </TabsContent>
         <TabsContent value="account">
             <Card>
-            <CardHeader>
-              <CardTitle>Account Management</CardTitle>
-              <CardDescription>
-                Manage your account settings. (Coming Soon)
-              </CardDescription>
-            </CardHeader>
-              <CardContent>
-              <p className="text-muted-foreground">This feature is under development. Check back later!</p>
-            </CardContent>
-          </Card>
+                <CardHeader>
+                  <CardTitle>Account Management</CardTitle>
+                  <CardDescription>
+                    Manage your account settings, including password changes and account deletion.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div>
+                        <h3 className="text-lg font-medium mb-2">Change Password</h3>
+                        <div className="space-y-4 max-w-sm">
+                             <div className="space-y-2">
+                                <Label htmlFor="current-password">Current Password</Label>
+                                <Input id="current-password" type="password" disabled/>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="new-password">New Password</Label>
+                                <Input id="new-password" type="password" disabled/>
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="confirm-password">Confirm New Password</Label>
+                                <Input id="confirm-password" type="password" disabled/>
+                            </div>
+                             <Button variant="outline" disabled>Change Password</Button>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-medium text-destructive mb-2">Delete Account</h3>
+                        <p className="text-sm text-muted-foreground mb-4">Permanently delete your account and all associated data. This action cannot be undone.</p>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive">Delete My Account</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete your account and remove your data from our servers.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => toast({ title: 'Request noted!', description: 'Account deletion is a manual process for now. We will be in touch.'})}>Continue</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                </CardContent>
+            </Card>
         </TabsContent>
       </Tabs>
     );
