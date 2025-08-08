@@ -31,6 +31,7 @@ export default function DashboardPage() {
           setEngineerType('default');
         }
       } 
+      // Only stop loading after we have checked for a user and their data
       setLoading(false);
     });
 
