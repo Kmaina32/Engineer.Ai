@@ -1,10 +1,8 @@
-import AssetList from "@/components/dashboard/asset-list";
 import AiTools from "@/components/dashboard/ai-tools";
 import Header from "@/components/dashboard/header";
-import OverviewCards from "@/components/dashboard/overview-cards";
 import Sidebar from "@/components/dashboard/sidebar";
-import SensorChart from "@/components/dashboard/sensor-chart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AssetList from "./asset-list";
 
 export default function DashboardPage() {
   return (
@@ -17,21 +15,21 @@ export default function DashboardPage() {
             <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="ai-tools">AI Tools</TabsTrigger>
+              <TabsTrigger value="assets">Assets</TabsTrigger>
             </TabsList>
             <TabsContent value="overview">
                <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3 mt-4">
-                  <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
-                    <OverviewCards />
-                    <SensorChart />
-                    <AssetList />
-                  </div>
-                  <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-1 xl:col-span-1">
-                     {/* Placeholder for other content */}
+                  <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-3">
+                    <h1 className="text-2xl font-semibold">Welcome to your Dashboard</h1>
+                    <p className="text-muted-foreground">This is your main dashboard. Use the tabs to navigate to different sections.</p>
                   </div>
                </div>
             </TabsContent>
             <TabsContent value="ai-tools">
                 <AiTools />
+            </TabsContent>
+            <TabsContent value="assets">
+                <AssetList />
             </TabsContent>
           </Tabs>
         </main>

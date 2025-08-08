@@ -64,7 +64,7 @@ export default function Header() {
             Dashboard
           </Link>
           <Link
-            href="#"
+            href="/assets"
             className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
           >
             <CircuitBoard className="h-5 w-5" />
@@ -78,7 +78,7 @@ export default function Header() {
             Chatbot
           </Link>
           <Link
-            href="#"
+            href="/maintenance"
             className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
           >
             <Wrench className="h-5 w-5" />
