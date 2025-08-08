@@ -19,6 +19,14 @@ export default function CookieBanner() {
   const handleConsent = (consent: 'true' | 'false') => {
     localStorage.setItem('cookie_consent', consent);
     setShowBanner(false);
+
+    if (consent === 'true') {
+        // Set a cookie that expires in 1 year
+        const d = new Date();
+        d.setTime(d.getTime() + (365*24*60*60*1000));
+        const expires = "expires="+ d.toUTCString();
+        document.cookie = "predictai_consent=true;" + expires + ";path=/";
+    }
   };
 
   if (!showBanner) {
