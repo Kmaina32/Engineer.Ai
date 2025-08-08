@@ -15,7 +15,7 @@ import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { generalChat } from '@/ai/flows/general-chat';
 import { cn } from '@/lib/utils';
 import { onAuthStateChanged, type User as AuthUser } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 
 const chatSchema = z.object({
@@ -34,20 +34,37 @@ export default function Chatbot() {
     { text: "Hello! I'm your AI assistant. How can I help you today?", isUser: false },
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(true);
   const [engineerType, setEngineerType] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    // Check for user and Firestore connection status
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
         const userDocRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          setEngineerType(userDoc.data().engineerType);
-        }
+        
+        // Use onSnapshot for real-time connection status
+        const unsubscribeFirestore = onSnapshot(userDocRef, 
+          (doc) => {
+            setIsConnecting(false); // Connected
+            if (doc.exists()) {
+              setEngineerType(doc.data().engineerType);
+            }
+          },
+          (error) => {
+            console.error("Firestore snapshot error:", error);
+            setIsConnecting(true); // Still treat as connecting on error
+          }
+        );
+
+        return () => unsubscribeFirestore();
+      } else {
+        setIsConnecting(false);
       }
     });
-    return () => unsubscribe();
+
+    return () => unsubscribeAuth();
   }, []);
 
   const form = useForm<ChatFormValues>({
@@ -91,6 +108,15 @@ export default function Chatbot() {
       setIsLoading(false);
     }
   };
+
+  if (isConnecting) {
+     return (
+        <Card className="w-full max-w-4xl h-[80vh] flex flex-col items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="mt-4 text-muted-foreground">Connecting to the database...</p>
+        </Card>
+     )
+  }
 
   return (
     <Card className="w-full max-w-4xl h-[80vh] flex flex-col">
@@ -169,3 +195,4 @@ export default function Chatbot() {
     </Card>
   );
 }
+
